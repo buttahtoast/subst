@@ -36,6 +36,10 @@ archives:
     files:
       - LICENSE
       - README.md
+release:
+  footer: |
+    ## Docker Images
+    - `ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}`
 checksum:
   name_template: 'checksums.txt'
 
