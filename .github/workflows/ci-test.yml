@@ -21,5 +21,5 @@ jobs:
         uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
-          args: release --rm-dist --snapshot
-          workdir: ./
+          args: release --rm-dist --snapshot --skip-sign
+          workdir: ./ 
