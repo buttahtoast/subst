@@ -1,5 +1,7 @@
 # Subst
 
+![subst](./img/subst.png "subst")
+
 ## Install
 
 **Brew**

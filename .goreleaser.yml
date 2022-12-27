@@ -61,7 +61,7 @@ dockers:
       - --label=org.opencontainers.image.description=subst - Substitution based on Kustomize
       - --label=org.opencontainers.image.vendor=Buttahtoast
       - --label=org.opencontainers.image.licenses=Apache-2.0
-      - --label=org.opencontainers.image.source=https://github.com/helm/chart-testing
+      - --label=org.opencontainers.image.source=https://github.com/butthatoast/subst
       - --label=org.opencontainers.image.authors=Buttahtoast
   - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}" ]
     dockerfile: Dockerfile
