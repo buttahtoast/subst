@@ -1,4 +1,4 @@
-package tool
+package utils
 
 import (
 	"encoding/json"
@@ -8,6 +8,11 @@ import (
 
 	"gopkg.in/yaml.v2"
 )
+
+type file struct {
+	data map[interface{}]interface{}
+	path string
+}
 
 func NewFile(path string) (*file, error) {
 	result := &file{

@@ -21,6 +21,7 @@ type Configuration struct {
 	EjsonSecretNamespace string        `mapstructure:"ejson-namespace"`
 	EjsonKey             []string      `mapstructure:"ejson-key"`
 	SkipDecryption       bool          `mapstructure:"skip-decryption"`
+	SkipEvaluation       bool          `mapstructure:"skip-eval"`
 	VarFilePattern       string        `mapstructure:"vars-pattern"`
 	Debug                bool          `mapstructure:"debug"`
 	KubectlTimeout       time.Duration `mapstructure:"kubectl-timeout"`

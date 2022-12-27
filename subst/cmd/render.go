@@ -38,6 +38,9 @@ func addRenderFlags(flags *flag.FlagSet) {
 			May be specified multiple times or separate values with commas`))
 	flags.Bool("skip-decrypt", false, heredoc.Doc(`
 			Disable decryption of EJSON files`))
+	flags.Bool("skip-eval", false, heredoc.Doc(`
+			Skip Spruce evaluation for all files (Useful if required variables are not available)`))
+
 }
 
 func render(cmd *cobra.Command, args []string) error {
