@@ -128,3 +128,9 @@ docker_signs:
     args: ["sign", "${artifact}"]
     artifacts: manifests
     stdin: '{{ .Env.COSIGN_PWD }}'
+brews:
+  - tap:
+      owner: Buttahtoast
+      name: subst
+      branch: dev
+    license: Apache-2.0

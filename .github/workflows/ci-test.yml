@@ -20,6 +20,6 @@ jobs:
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
         with:
-          args: release --snapshot --rm-dist
+          version: latest
+          args: release --rm-dist --snapshot
           workdir: ./
-          version: snapshot
