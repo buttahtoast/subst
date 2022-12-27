@@ -59,6 +59,7 @@ dockers:
       - --label=org.opencontainers.image.licenses=Apache-2.0
       - --label=org.opencontainers.image.source=https://github.com/helm/chart-testing
       - --label=org.opencontainers.image.authors=Buttahtoast
+
   # - skip_push: false
   #   use: buildx
   #   dockerfile: Dockerfile
