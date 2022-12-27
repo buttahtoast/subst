@@ -43,7 +43,7 @@ snapshot:
   name_template: "{{ .Tag }}-next"
 
 dockers:
-  - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}-amd64" ]
+  - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}" ]
     dockerfile: Dockerfile
     goos: linux
     goarch: amd64
@@ -59,7 +59,38 @@ dockers:
       - --label=org.opencontainers.image.licenses=Apache-2.0
       - --label=org.opencontainers.image.source=https://github.com/helm/chart-testing
       - --label=org.opencontainers.image.authors=Buttahtoast
-
+  - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}" ]
+    dockerfile: Dockerfile
+    goos: linux
+    goarch: arm64
+    use: buildx
+    build_flag_templates:
+      - --platform=linux/arm64
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.revision={{ .Commit }}
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.created={{ .Date }}
+      - --label=org.opencontainers.image.description=subst - Substitution based on Kustomize
+      - --label=org.opencontainers.image.vendor=Buttahtoast
+      - --label=org.opencontainers.image.licenses=Apache-2.0
+      - --label=org.opencontainers.image.source=https://github.com/helm/chart-testing
+      - --label=org.opencontainers.image.authors=Buttahtoast
+  - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}" ]
+    dockerfile: Dockerfile
+    goos: linux
+    goarch: arm
+    use: buildx
+    build_flag_templates:
+      - --platform=linux/arm64
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.revision={{ .Commit }}
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.created={{ .Date }}
+      - --label=org.opencontainers.image.description=subst - Substitution based on Kustomize
+      - --label=org.opencontainers.image.vendor=Buttahtoast
+      - --label=org.opencontainers.image.licenses=Apache-2.0
+      - --label=org.opencontainers.image.source=https://github.com/helm/chart-testing
+      - --label=org.opencontainers.image.authors=Buttahtoast
   # - skip_push: false
   #   use: buildx
   #   dockerfile: Dockerfile
