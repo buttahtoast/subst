@@ -1,0 +1,130 @@
+project_name: subst
+
+env:
+  - COSIGN_EXPERIMENTAL=true
+
+before:
+  hooks:
+    - go mod download
+
+sboms:
+- artifacts: archive
+
+builds:
+  - main: subst/main.go
+    binary: subst
+    env:
+      - CGO_ENABLED=0
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goos:
+      - linux
+      - darwin
+      - windows
+    flags:
+      - -trimpath
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    ldflags:
+      - >-
+        -X github.com/buttahtoast/subst/subst/cmd.Version={{ .Tag }}
+        -X github.com/buttahtoast/subst/subst/cmd.GitCommit={{ .Commit }}
+        -X github.com/buttahtoast/subst/subst/cmd.BuildDate={{ .Date }}
+archives:
+  - format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
+      - etc/chart_schema.yaml
+      - etc/lintconf.yaml
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
+dockers:
+  - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}-amd64" ]
+    dockerfile: Dockerfile
+    goos: linux
+    goarch: amd64
+    use: buildx
+    build_flag_templates:
+      - --platform=linux/arm64
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.revision={{ .Commit }}
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.created={{ .Date }}
+      - --label=org.opencontainers.image.description=subst - Substitution based on Kustomize
+      - --label=org.opencontainers.image.vendor=Buttahtoast
+      - --label=org.opencontainers.image.licenses=Apache-2.0
+      - --label=org.opencontainers.image.source=https://github.com/helm/chart-testing
+      - --label=org.opencontainers.image.authors=Buttahtoast
+  # - skip_push: false
+  #   use: buildx
+  #   dockerfile: Dockerfile
+  #   image_templates:
+  #     - quay.io/helmpack/chart-testing:{{ .Tag }}-amd64
+  #     - quay.io/helmpack/chart-testing:latest-amd64
+  #   build_flag_templates:
+  #     - --platform=linux/amd64
+  #     - --label=org.opencontainers.image.version={{ .Version }}
+  #     - --label=org.opencontainers.image.revision={{ .Commit }}
+  #     - --label=org.opencontainers.image.title={{ .ProjectName }}
+  #     - --label=org.opencontainers.image.created={{ .Date }}
+  #     - --label=org.opencontainers.image.description=ct - The chart testing tool
+  #     - --label=org.opencontainers.image.vendor=Helm
+  #     - --label=org.opencontainers.image.licenses=Apache-2.0
+  #     - --label=org.opencontainers.image.source=https://github.com/helm/chart-testing
+  #     - --label=org.opencontainers.image.authors=The Helm Authors
+  #   extra_files:
+  #     - etc/chart_schema.yaml
+  #     - etc/lintconf.yaml
+  # - skip_push: false
+  #   goarch: arm64
+  #   use: buildx
+  #   dockerfile: Dockerfile
+  #   image_templates:
+  #     - quay.io/helmpack/chart-testing:{{ .Tag }}-arm64
+  #     - quay.io/helmpack/chart-testing:latest-arm64
+  #   build_flag_templates:
+  #     - --platform=linux/arm64
+  #     - --label=org.opencontainers.image.version={{ .Version }}
+  #     - --label=org.opencontainers.image.revision={{ .Commit }}
+  #     - --label=org.opencontainers.image.title={{ .ProjectName }}
+  #     - --label=org.opencontainers.image.created={{ .Date }}
+  #     - --label=org.opencontainers.image.description=subst - Substitution based on Kustomize
+  #     - --label=org.opencontainers.image.vendor=Buttahtoast
+  #     - --label=org.opencontainers.image.licenses=Apache-2.0
+  #     - --label=org.opencontainers.image.source=https://github.com/helm/chart-testing
+  #     - --label=org.opencontainers.image.authors=Buttahtoast
+  #   extra_files:
+  #     - etc/chart_schema.yaml
+  #     - etc/lintconf.yaml
+
+# docker_manifests:
+# - name_template: quay.io/buttahtoast/subst:latest
+#   image_templates:
+#   - quay.io/buttahtoast/subst:latest-amd64
+#   - quay.io/buttahtoast/subst:latest-arm64
+# - name_template: quay.io/buttahtoast/subst:{{ .Tag }}
+#   image_templates:
+#   - docker.io/buttahtoast/subst:{{ .Tag }}-amd64
+#   - quay.io/buttahtoast/subst:{{ .Tag }}-arm64
+
+signs:
+  - cmd: cosign
+    stdin: '{{ .Env.COSIGN_PWD }}'
+    args: ["sign-blob", "-key=cosign.key", "-output=${signature}", "${artifact}"]
+    artifacts: checksum
+
+docker_signs:
+  - id: images
+    cmd: cosign
+    args: ["sign", "${artifact}"]
+    artifacts: manifests
+    stdin: '{{ .Env.COSIGN_PWD }}'
