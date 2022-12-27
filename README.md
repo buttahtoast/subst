@@ -1,5 +1,27 @@
 # Subst
 
+## Install
+
+**Brew**
+
+```bash
+brew tap buttahtoast/subst
+```
+
+**Docker**
+
+```bash
+docker run -it ghcr.io/buttahtoast/subst -h
+```
+
+**Github Releases**
+
+https://github.com/buttahtoast/subst/releases
+
+
+
+###
+
 EJSON Merger is a simple bash script, which uses the tools [spruce](https://github.com/geofffranks/spruce), [jq](https://stedolan.github.io/jq/) and [ejson](https://github.com/Shopify/ejson). The main purpose of the script is, to merge multiple yaml/yml and json scripts together into one big map, which can be exported to a specific file or stdout. Since the merge process is done via spurce, you are able to use all spruce operators across all your files. See all spruce operators [here](https://github.com/geofffranks/spruce/blob/master/doc/operators.md). This tool gives you great advantages in your CI builds, since you are able to spread information into different files, but can join them with each other. But also, you can safely upload secrets to a repo.
 
 
