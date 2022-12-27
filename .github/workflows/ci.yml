@@ -25,5 +25,5 @@ jobs:
           args: release --rm-dist
           workdir: ./
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           COSIGN_PWD: ${{ secrets.COSIGN_PWD }}
