@@ -3,9 +3,6 @@ kind: Deployment
 metadata:
   name: external-dns
   namespace: external-dns
-first_array:
-  - (( grab $.subst.vars.cluster.name ))
-  - (( grab $.subst.vars.cluster.id ))  
 spec:
   selector:
     matchLabels:
