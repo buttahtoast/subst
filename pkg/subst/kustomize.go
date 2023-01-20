@@ -3,13 +3,16 @@ package subst
 import (
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/buttahtoast/subst/pkg/utils"
-	"sigs.k8s.io/kustomize/api/filesys"
 	"sigs.k8s.io/kustomize/api/krusty"
 	"sigs.k8s.io/kustomize/api/resmap"
 	kustypes "sigs.k8s.io/kustomize/api/types"
+	"sigs.k8s.io/kustomize/kyaml/filesys"
 )
+
+var kustomizeBuildMutex sync.Mutex
 
 // Resolves all paths from the kustomization file
 func (b *Build) kustomizePaths(path string) error {
@@ -36,21 +39,25 @@ func (b *Build) kustomizePaths(path string) error {
 	return nil
 }
 
-func (b *Build) kustomizeBuild() (resmap.ResMap, error) {
+func (b *Build) kustomizeBuild() (build resmap.ResMap, err error) {
+	// temporary workaround for concurrent map read and map write bug
+	// https://github.com/kubernetes-sigs/kustomize/issues/3659
+	kustomizeBuildMutex.Lock()
+	defer kustomizeBuildMutex.Unlock()
+
 	fs := filesys.MakeFsOnDisk()
 
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("recovered from kustomize build panic: %v", r)
+		}
+	}()
+
 	buildOptions := &krusty.Options{
-		DoLegacyResourceSort: true,
-		LoadRestrictions:     kustypes.LoadRestrictionsNone,
-		AddManagedbyLabel:    false,
-		DoPrune:              false,
-		PluginConfig:         kustypes.DisabledPluginConfig(),
-	}
-	k := krusty.MakeKustomizer(buildOptions)
-	build, err := k.Run(fs, b.root)
-	if err != nil {
-		return nil, err
+		LoadRestrictions: kustypes.LoadRestrictionsNone,
+		PluginConfig:     kustypes.DisabledPluginConfig(),
 	}
 
-	return build, nil
+	k := krusty.MakeKustomizer(buildOptions)
+	return k.Run(fs, b.root)
 }

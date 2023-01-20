@@ -7,6 +7,7 @@ import (
 	"github.com/buttahtoast/subst/pkg/config"
 	"github.com/geofffranks/spruce"
 	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/kustomize/api/resmap"
 )
 
 type Build struct {
@@ -59,6 +60,7 @@ func New(config config.Configuration) (build *Build, err error) {
 }
 
 func (b *Build) build() error {
+	var manifests resmap.ResMap
 
 	manifests, err := b.kustomizeBuild()
 	if err != nil {
