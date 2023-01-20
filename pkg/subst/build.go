@@ -1,15 +1,18 @@
 package subst
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/buttahtoast/subst/pkg/config"
+	"github.com/geofffranks/spruce"
+	"gopkg.in/yaml.v2"
 )
 
 type Build struct {
 	root          string
 	Paths         []string
-	Manifests     []manifest
+	Manifests     []map[interface{}]interface{}
 	Substitutions Substitutions
 	keys          []string
 	cfg           config.Configuration
@@ -23,15 +26,31 @@ type Substitutions struct {
 	} `yaml:"subst"`
 }
 
-func New(config config.Configuration) (*Build, error) {
+func (s *Substitutions) tointerface() (map[interface{}]interface{}, error) {
+	tmp := make(map[interface{}]interface{})
+	yml, err := yaml.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+	err = yaml.Unmarshal(yml, tmp)
+	return tmp, err
+}
+
+func New(config config.Configuration) (build *Build, err error) {
 	result := &Build{
 		root: config.RootDirectory,
 		cfg:  config,
 		keys: config.EjsonKey,
 	}
 
+	// Gather all releveant paths
+	err = result.kustomizePaths(result.root)
+	if err != nil {
+		return nil, err
+	}
+
 	// Kustomize Build
-	err := result.build()
+	err = result.build()
 	if err != nil {
 		return nil, err
 	}
@@ -41,12 +60,7 @@ func New(config config.Configuration) (*Build, error) {
 
 func (b *Build) build() error {
 
-	err := b.kustomizePaths(b.root)
-	if err != nil {
-		return err
-	}
-
-	err = b.kustomizeBuild()
+	manifests, err := b.kustomizeBuild()
 	if err != nil {
 		return err
 	}
@@ -67,8 +81,50 @@ func (b *Build) build() error {
 		return err
 	}
 
-	return nil
+	// Load Substitutions
+	substs, err := b.Substitutions.tointerface()
+	if err != nil {
+		return err
+	}
 
+	// Run Spruce
+	for _, manifest := range manifests.Resources() {
+
+		// Load Single Manifest
+		m, _ := manifest.AsYAML()
+		var str map[interface{}]interface{}
+		err := yaml.Unmarshal(m, &str)
+
+		substManifest, err := spruce.Merge(str, substs)
+		if err != nil {
+			return err
+		}
+
+		// Evaluate with Spruce
+		evaluator := &spruce.Evaluator{
+			Tree:     substManifest,
+			SkipEval: b.cfg.SkipEvaluation,
+		}
+
+		err = evaluator.Run([]string{"subst"}, nil)
+		if err != nil {
+			return err
+		}
+
+		// Normal Environment Substitution
+
+		// Remove Substitution Tree
+		//delete(evaluator.Tree, "subst")
+		fmt.Println(evaluator.Tree)
+		//fmt.Printf("\n \n\n \n\n \n\n \n%v \n \n", eval)
+		//return eval.Tree, nil
+		b.Manifests = append(b.Manifests, evaluator.Tree)
+
+		//generator.SubstituteVariables()
+
+	}
+
+	return nil
 }
 
 func (b *Build) walkpaths(fn filepath.WalkFunc) error {

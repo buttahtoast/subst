@@ -21,43 +21,43 @@ type ejsonFile struct {
 }
 
 func (b *Build) loadEjsonKeys() error {
+	if !b.cfg.SkipDecryption {
 
-	// try to use k8s secrets
-	secretName := b.cfg.EjsonSecret
-	if secretName != "" {
-		// Create a new rest config
-		cfg, err := rest.InClusterConfig()
-		if err != nil {
-			panic(err)
-		}
-
-		// Create a new clientset
-		clientset, err := kubernetes.NewForConfig(cfg)
-		if err != nil {
-			panic(err)
-		}
-
-		// Set the namespace and secret name
-		namespace := b.cfg.EjsonSecretNamespace
-
-		// Get the secret
-		secret, err := clientset.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
-		if err != nil {
-			panic(err)
-		}
-
-		// add all keys to
-		for s := range secret.Data {
-			decodedData, err := base64.StdEncoding.DecodeString(string(secret.Data[s]))
+		// try to use k8s secrets
+		secretName := b.cfg.EjsonSecret
+		if secretName != "" {
+			// Create a new rest config
+			cfg, err := rest.InClusterConfig()
 			if err != nil {
-				return err
+				panic(err)
 			}
-			b.keys = append(b.keys, string(decodedData))
-		} // Read from Kubernetes Secret
 
+			// Create a new clientset
+			clientset, err := kubernetes.NewForConfig(cfg)
+			if err != nil {
+				panic(err)
+			}
+
+			// Set the namespace and secret name
+			namespace := b.cfg.EjsonSecretNamespace
+
+			// Get the secret
+			secret, err := clientset.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
+			if err != nil {
+				panic(err)
+			}
+
+			// add all keys to
+			for s := range secret.Data {
+				decodedData, err := base64.StdEncoding.DecodeString(string(secret.Data[s]))
+				if err != nil {
+					return err
+				}
+				b.keys = append(b.keys, string(decodedData))
+			} // Read from Kubernetes Secret
+		}
 	}
 	return nil
-
 }
 
 func (b *Build) ejsonWalk(path string, info fs.FileInfo, err error) error {

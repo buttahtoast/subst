@@ -7,6 +7,7 @@ import (
 	"github.com/buttahtoast/subst/pkg/utils"
 	"sigs.k8s.io/kustomize/api/filesys"
 	"sigs.k8s.io/kustomize/api/krusty"
+	"sigs.k8s.io/kustomize/api/resmap"
 	kustypes "sigs.k8s.io/kustomize/api/types"
 )
 
@@ -35,7 +36,7 @@ func (b *Build) kustomizePaths(path string) error {
 	return nil
 }
 
-func (b *Build) kustomizeBuild() error {
+func (b *Build) kustomizeBuild() (resmap.ResMap, error) {
 	fs := filesys.MakeFsOnDisk()
 
 	buildOptions := &krusty.Options{
@@ -46,17 +47,10 @@ func (b *Build) kustomizeBuild() error {
 		PluginConfig:         kustypes.DisabledPluginConfig(),
 	}
 	k := krusty.MakeKustomizer(buildOptions)
-	build, err := k.Run(fs, b.entryPath)
+	build, err := k.Run(fs, b.root)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	for _, m := range build.Resources() {
-		n, err := NewManifest(m)
-		if err != nil {
-			return err
-		}
-		b.Manifests = append(b.Manifests, n)
-	}
-	return nil
+	return build, nil
 }

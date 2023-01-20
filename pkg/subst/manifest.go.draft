@@ -17,21 +17,21 @@ type manifest struct {
 	Decrypt    bool
 }
 
-func NewManifest(data resource.Resource) (manifest, error) {
+func NewManifest(data resource.Resource) (file manifest, err error) {
 	var res map[interface{}]interface{}
-	result := manifest{}
+	file = manifest{}
 
 	// Unmarshal Data
 	d, _ := data.AsYAML()
-	err := yaml.Unmarshal(d, &res)
+	err = yaml.Unmarshal(d, &res)
 	if err != nil {
-		return result, err
+		return file, err
 	}
 
 	result := manifest{
-		data: data,
+		Data: data,
 	}
-	err := result.loadMap()
+	err = result.loadMap()
 	return result, err
 }
 

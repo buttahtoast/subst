@@ -42,7 +42,7 @@ func (f *file) loadMap() error {
 
 func (f *file) load() ([]byte, error) {
 	var data []byte
-	data, err = ioutil.ReadFile(f.path)
+	data, err := ioutil.ReadFile(f.path)
 	if err != nil {
 		return nil, err
 	}

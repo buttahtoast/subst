@@ -6,7 +6,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/buttahtoast/subst/pkg/config"
-	"github.com/buttahtoast/subst/pkg/tool"
+	"github.com/buttahtoast/subst/pkg/subst"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v2"
@@ -48,12 +48,12 @@ func render(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed loading configuration: %w", err)
 	}
-	m, err := tool.Gather(*configuration)
+	m, err := subst.New(*configuration)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	for _, f := range m {
+	for _, f := range m.Manifests {
 		y, err := yaml.Marshal(f)
 		if err != nil {
 			log.Fatalf("error: %v", err)
