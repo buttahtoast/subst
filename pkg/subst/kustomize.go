@@ -6,10 +6,8 @@ import (
 	"sync"
 
 	"github.com/buttahtoast/subst/pkg/utils"
-	"sigs.k8s.io/kustomize/api/krusty"
+	generator "github.com/fluxcd/pkg/kustomize"
 	"sigs.k8s.io/kustomize/api/resmap"
-	kustypes "sigs.k8s.io/kustomize/api/types"
-	"sigs.k8s.io/kustomize/kyaml/filesys"
 )
 
 var kustomizeBuildMutex sync.Mutex
@@ -40,24 +38,16 @@ func (b *Build) kustomizePaths(path string) error {
 }
 
 func (b *Build) kustomizeBuild() (build resmap.ResMap, err error) {
-	// temporary workaround for concurrent map read and map write bug
-	// https://github.com/kubernetes-sigs/kustomize/issues/3659
-	kustomizeBuildMutex.Lock()
-	defer kustomizeBuildMutex.Unlock()
 
-	fs := filesys.MakeFsOnDisk()
-
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("recovered from kustomize build panic: %v", r)
-		}
-	}()
-
-	buildOptions := &krusty.Options{
-		LoadRestrictions: kustypes.LoadRestrictionsNone,
-		PluginConfig:     kustypes.DisabledPluginConfig(),
+	// Create tmp dir.
+	tmpDir, err := utils.MkdirTempAbs("", "subst-")
+	if err != nil {
+		err = fmt.Errorf("tmp dir error: %w", err)
+		return nil, err
 	}
 
-	k := krusty.MakeKustomizer(buildOptions)
-	return k.Run(fs, b.root)
+	// Remove Build directory
+	defer os.RemoveAll(tmpDir)
+
+	return generator.SecureBuild(tmpDir, b.root, false)
 }

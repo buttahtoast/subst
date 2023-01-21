@@ -52,13 +52,14 @@ func render(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	for _, f := range m.Manifests {
-		y, err := yaml.Marshal(f)
-		if err != nil {
-			log.Fatalf("error: %v", err)
+	if m.Manifests != nil {
+		for _, f := range m.Manifests {
+			y, err := yaml.Marshal(f)
+			if err != nil {
+				log.Fatalf("error: %v", err)
+			}
+			fmt.Printf("---\n%s\n", string(y))
 		}
-		fmt.Printf("---\n%s\n", string(y))
 	}
 	//return yaml.Marshal(f.data)
 
