@@ -20,11 +20,7 @@ type Build struct {
 }
 
 type Substitutions struct {
-	Subst struct {
-		Env     map[string]string           `yaml:"env"`
-		Vars    map[interface{}]interface{} `yaml:"vars"`
-		Secrets map[interface{}]interface{} `yaml:"secrets"`
-	} `yaml:"subst"`
+	Subst map[interface{}]interface{} `yaml:"subst"`
 }
 
 func (s *Substitutions) tointerface() (map[interface{}]interface{}, error) {
@@ -50,8 +46,8 @@ func New(config config.Configuration) (build *Build, err error) {
 		return nil, err
 	}
 
-	// Kustomize Build
-	err = result.build()
+	// Gather all available substitutions
+	err = result.gatherSubstituions()
 	if err != nil {
 		return nil, err
 	}
@@ -59,26 +55,26 @@ func New(config config.Configuration) (build *Build, err error) {
 	return result, err
 }
 
-func (b *Build) build() error {
-	var manifests resmap.ResMap
+func (b *Build) gatherSubstituions() (err error) {
 
-	manifests, err := b.kustomizeBuild()
-	if err != nil {
-		return err
-	}
-
+	// Read Vars Files
 	err = b.walkpaths(b.varsWalk)
 	if err != nil {
 		return err
 	}
 
-	// Ejson
-	err = b.loadEjsonKeys()
+	err = b.runEjson()
 	if err != nil {
 		return err
 	}
 
-	err = b.walkpaths(b.ejsonWalk)
+	return nil
+}
+
+func (b *Build) Build() error {
+	var manifests resmap.ResMap
+
+	manifests, err := b.kustomizeBuild()
 	if err != nil {
 		return err
 	}
@@ -129,6 +125,7 @@ func (b *Build) build() error {
 	return nil
 }
 
+// Generic funtion to walk all paths and run a function on each file
 func (b *Build) walkpaths(fn filepath.WalkFunc) error {
 	for path := range b.Paths {
 		err := filepath.Walk(b.Paths[path], fn)

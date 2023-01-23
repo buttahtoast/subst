@@ -1,0 +1,61 @@
+package subst
+
+import (
+	"os"
+	"regexp"
+	"strings"
+
+	"sigs.k8s.io/kustomize/api/resource"
+)
+
+const (
+	postBuildField           = "postBuild"
+	substituteFromField      = "substituteFrom"
+	substituteField          = "substitute"
+	substituteAnnotationKeys = []string{"kustomize.toolkit.fluxcd.io/substitute"}
+)
+
+// Read Environment Variables for substitution
+func (b *Build) readEnvironment() error {
+	b.Substitutions.Subst.Env = make(map[string]string)
+	r, _ := regexp.Compile("^ARGOCD_ENV_.*$")
+	for _, e := range os.Environ() {
+		pair := strings.SplitN(e, "=", 2)
+		key := pair[0]
+		value := pair[1]
+
+		// Rewrite ArgoCD Environment Variables
+		if r.MatchString(key) {
+			key = strings.ReplaceAll(key, "ARGOCD_ENV_", "")
+		}
+		b.Substitutions.Subst.Env[key] = value
+	}
+	return nil
+}
+
+func (b *Build) envsubst(res *resource.Resource) (*resource.Resource, error) {
+	resData, err := res.AsYAML()
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if resource has substition disabled
+	if substitionDisabled(res.GetAnnotations()) || substitionDisabled(res.GetLabels()) {
+		return nil, nil
+	}
+
+	jsonData, err := varSubstitution(resData, vars)
+
+	varSubstitution
+
+}
+
+func substitionDisabled(annotations map[string]string) bool {
+	disabledValue := "disabled"
+	for _, key := range substituteAnnotationKeys {
+		if val, _ := annotations[key]; val == disabledValue {
+			return true
+		}
+	}
+	return false
+}

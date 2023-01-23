@@ -36,7 +36,7 @@ func addRenderFlags(flags *flag.FlagSet) {
 	flags.StringSlice("ejson-key", []string{}, heredoc.Doc(`
 			Specify EJSON Private key used for decryption.
 			May be specified multiple times or separate values with commas`))
-	flags.Bool("skip-decrypt", false, heredoc.Doc(`
+	flags.Bool("skip-decryption", false, heredoc.Doc(`
 			Disable decryption of EJSON files`))
 	flags.Bool("skip-eval", false, heredoc.Doc(`
 			Skip Spruce evaluation for all files (Useful if required variables are not available)`))
@@ -50,19 +50,23 @@ func render(cmd *cobra.Command, args []string) error {
 	}
 	m, err := subst.New(*configuration)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
-	if m.Manifests != nil {
-		for _, f := range m.Manifests {
-			y, err := yaml.Marshal(f)
-			if err != nil {
-				log.Fatalf("error: %v", err)
+	if m != nil {
+		err = m.Build()
+		if err != nil {
+			return err
+		}
+		if m.Manifests != nil {
+			for _, f := range m.Manifests {
+				y, err := yaml.Marshal(f)
+				if err != nil {
+					log.Fatalf("error: %v", err)
+				}
+				fmt.Printf("---\n%s\n", string(y))
 			}
-			fmt.Printf("---\n%s\n", string(y))
 		}
 	}
-	//return yaml.Marshal(f.data)
 
 	return nil
-
 }

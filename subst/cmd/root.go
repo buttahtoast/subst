@@ -28,7 +28,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newGenerateDocsCmd())
 	cmd.AddCommand(newRenderCmd())
 	cmd.AddCommand(newConfigCmd())
-	cmd.AddCommand(newArtifactCmd())
+	cmd.AddCommand(newSubstitutionsCmd())
 	//
 
 	cmd.DisableAutoGenTag = true

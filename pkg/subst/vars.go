@@ -14,7 +14,7 @@ func (b *Build) varsWalk(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		b.Substitutions.Subst.Vars, err = spruce.Merge(b.Substitutions.Subst.Vars, file.Map())
+		b.Substitutions.Subst, err = spruce.Merge(b.Substitutions.Subst, file.Map())
 		if err != nil {
 			return err
 		}

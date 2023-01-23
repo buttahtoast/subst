@@ -3,14 +3,11 @@ package subst
 import (
 	"fmt"
 	"os"
-	"sync"
 
 	"github.com/buttahtoast/subst/pkg/utils"
 	generator "github.com/fluxcd/pkg/kustomize"
 	"sigs.k8s.io/kustomize/api/resmap"
 )
-
-var kustomizeBuildMutex sync.Mutex
 
 // Resolves all paths from the kustomization file
 func (b *Build) kustomizePaths(path string) error {
@@ -46,8 +43,10 @@ func (b *Build) kustomizeBuild() (build resmap.ResMap, err error) {
 		return nil, err
 	}
 
+	 := generator.MakeFsOnDisk()
+
 	// Remove Build directory
 	defer os.RemoveAll(tmpDir)
 
-	return generator.SecureBuild(tmpDir, b.root, false)
+	return generator.Build(tmpDir, b.root)
 }
