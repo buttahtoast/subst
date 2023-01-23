@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"sigs.k8s.io/kustomize/api/konfig"
-	"sigs.k8s.io/kustomize/api/types"
 )
 
 func ConvertPath(path string) string {
@@ -14,6 +11,15 @@ func ConvertPath(path string) string {
 		path = fmt.Sprintf("%v/", path)
 	}
 	return path
+}
+
+// Convert converts a map[string]interface{} to a map[interface{}]interface{}.
+func ConvertMap(inputMap map[string]interface{}) map[interface{}]interface{} {
+	var convertedMap = make(map[interface{}]interface{})
+	for key, value := range inputMap {
+		convertedMap[key] = value
+	}
+	return convertedMap
 }
 
 // MkdirTempAbs creates a tmp dir and returns the absolute path to the dir.
@@ -29,21 +35,4 @@ func MkdirTempAbs(dir, pattern string) (string, error) {
 		return "", fmt.Errorf("error evaluating symlink: %w", err)
 	}
 	return tmpDir, nil
-}
-
-// ReadKustomize reads a kustomization file from a path
-func ReadKustomize(path string) (types.Kustomization, error) {
-	kz := types.Kustomization{}
-	for _, kfilename := range konfig.RecognizedKustomizationFileNames() {
-		if _, err := os.Stat(path + kfilename); err == nil {
-			kzBytes, err := os.ReadFile(path + kfilename)
-			if err != nil {
-				println(err)
-			}
-			err = kz.Unmarshal(kzBytes)
-
-			return kz, err
-		}
-	}
-	return kz, fmt.Errorf("no kustomization file found in %v", path)
 }

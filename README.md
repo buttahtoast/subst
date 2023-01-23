@@ -2,6 +2,8 @@
 
 ![subst](./img/subst.png "subst")
 
+A simple extension over kustomize, which allows further variable substitution and simplified secrets management.
+
 ## Install
 
 **Brew**
@@ -19,6 +21,12 @@ docker run -it ghcr.io/buttahtoast/subst -h
 **Github Releases**
 
 https://github.com/buttahtoast/subst/releases
+
+
+
+
+
+
 
 
 

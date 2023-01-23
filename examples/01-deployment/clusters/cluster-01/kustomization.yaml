@@ -3,4 +3,7 @@ kind: Kustomization
 resources:
   - ../../common/dns/
   - ../../location/ch-east/
-# - (( concat "../common/env/" $.Subs.Env "/" ))
+patches:
+- path: ../../common/patches/patch.yaml
+  target:
+    kind: Deployment

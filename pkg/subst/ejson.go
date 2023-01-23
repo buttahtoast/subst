@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/Shopify/ejson"
+	"github.com/buttahtoast/subst/pkg/utils"
 	"github.com/geofffranks/spruce"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -21,11 +22,6 @@ import (
 const (
 	publicKeyField = "_public_key"
 )
-
-type ejsonFile struct {
-	Data      map[interface{}]interface{} `json:"-"`
-	PublicKey string                      `json:"_public_key"`
-}
 
 func (b *Build) runEjson() error {
 	if !b.cfg.SkipDecryption {
@@ -87,6 +83,7 @@ func (b *Build) ejsonWalk(path string, info fs.FileInfo, err error) error {
 		outBuffer bytes.Buffer
 	)
 	if filepath.Ext(path) == b.cfg.EjsonFilePattern {
+		decrypted := false
 
 		// No decryption requested, just read the file
 		if b.cfg.SkipDecryption {
@@ -105,15 +102,16 @@ func (b *Build) ejsonWalk(path string, info fs.FileInfo, err error) error {
 			for key := range b.keys {
 				err = ejson.Decrypt(file, &outBuffer, "", b.keys[key])
 				if err != nil {
-					// if decryption fail try other key
-					// maybe optimize this by analysing priv key
 					continue
 				} else {
-					// Redirect enrypted data
 					data = outBuffer.Bytes()
-					// leave loop when decryption retrun zero error
+					decrypted = true
 					break
 				}
+			}
+
+			if !decrypted {
+				return fmt.Errorf("%s: Could not decrypt with given keys. Consider skipping decryption", path)
 			}
 		}
 
@@ -126,7 +124,7 @@ func (b *Build) ejsonWalk(path string, info fs.FileInfo, err error) error {
 		// Remove Public Key information
 		delete(i, publicKeyField)
 
-		c := convert(i)
+		c := utils.ConvertMap(i)
 
 		b.Substitutions.Subst, err = spruce.Merge(b.Substitutions.Subst, c)
 		if err != nil {
@@ -135,29 +133,4 @@ func (b *Build) ejsonWalk(path string, info fs.FileInfo, err error) error {
 	}
 
 	return err
-}
-
-func convert(inputMap map[string]interface{}) map[interface{}]interface{} {
-	var convertedMap = make(map[interface{}]interface{})
-	for key, value := range inputMap {
-		convertedMap[key] = value
-	}
-	return convertedMap
-}
-
-func extract(jsonStr string, key string) (map[interface{}]interface{}, error) {
-	var data map[string]interface{}
-	err := json.Unmarshal([]byte(jsonStr), &data)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make(map[interface{}]interface{})
-	value, ok := data[key]
-	if !ok {
-		return nil, fmt.Errorf("key '%s' not found in JSON data", key)
-	}
-
-	result[key] = value
-	return result, nil
 }

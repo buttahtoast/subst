@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/buttahtoast/subst/pkg/config"
@@ -61,7 +60,7 @@ func render(cmd *cobra.Command, args []string) error {
 			for _, f := range m.Manifests {
 				y, err := yaml.Marshal(f)
 				if err != nil {
-					log.Fatalf("error: %v", err)
+					return err
 				}
 				fmt.Printf("---\n%s\n", string(y))
 			}

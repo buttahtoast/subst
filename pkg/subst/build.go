@@ -1,7 +1,6 @@
 package subst
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"github.com/buttahtoast/subst/pkg/config"
@@ -92,6 +91,9 @@ func (b *Build) Build() error {
 		m, _ := manifest.AsYAML()
 		var str map[interface{}]interface{}
 		err := yaml.Unmarshal(m, &str)
+		if err != nil {
+			return err
+		}
 
 		substManifest, err := spruce.Merge(str, substs)
 		if err != nil {
@@ -104,22 +106,12 @@ func (b *Build) Build() error {
 			SkipEval: b.cfg.SkipEvaluation,
 		}
 
+		// Evaluate Tree and prune subst
 		err = evaluator.Run([]string{"subst"}, nil)
 		if err != nil {
 			return err
 		}
-
-		// Normal Environment Substitution
-
-		// Remove Substitution Tree
-		//delete(evaluator.Tree, "subst")
-		fmt.Println(evaluator.Tree)
-		//fmt.Printf("\n \n\n \n\n \n\n \n%v \n \n", eval)
-		//return eval.Tree, nil
 		b.Manifests = append(b.Manifests, evaluator.Tree)
-
-		//generator.SubstituteVariables()
-
 	}
 
 	return nil

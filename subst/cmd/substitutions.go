@@ -36,12 +36,16 @@ func substitutions(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if m != nil {
+		if m.Substitutions.Subst != nil {
+			fmt.Printf("%v", m.Paths)
 
-		y, err := yaml.Marshal(m.Substitutions)
-		if err != nil {
-			return err
+			y, err := yaml.Marshal(m.Substitutions)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("\nAvailable for substitution: \n\n" + string(y))
+
 		}
-		fmt.Println(string(y))
 	}
 
 	return nil
