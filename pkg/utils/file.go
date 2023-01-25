@@ -2,9 +2,7 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
-	"log"
 
 	"gopkg.in/yaml.v2"
 )
@@ -59,22 +57,4 @@ func (f *file) YAML() ([]byte, error) {
 
 func (f *file) JSON() ([]byte, error) {
 	return json.Marshal(f.data)
-}
-
-/* create a golang function which prints map[interface{}]interface{} as yaml */
-func (m *file) PrintYAML() {
-	y, err := yaml.Marshal(m.data)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-	fmt.Printf("---\n%s\n", string(y))
-}
-
-/* create a golang function which prints map[interface{}]interface{} as json */
-func (m *file) PrintJSON() {
-	j, err := json.Marshal(m.data)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-	fmt.Printf("%s\n", string(j))
 }

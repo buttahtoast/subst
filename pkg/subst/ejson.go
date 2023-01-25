@@ -14,6 +14,7 @@ import (
 	"github.com/Shopify/ejson"
 	"github.com/buttahtoast/subst/pkg/utils"
 	"github.com/geofffranks/spruce"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -24,7 +25,7 @@ const (
 )
 
 func (b *Build) runEjson() error {
-	if !b.cfg.SkipDecryption {
+	if !b.cfg.SkipDecrypt {
 		err := b.loadEjsonKeys()
 		if err != nil {
 			return err
@@ -60,7 +61,7 @@ func (b *Build) loadEjsonKeys() error {
 
 		// Get the secret
 		secret, err := clientset.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
-		if err != nil {
+		if err != nil && !k8serrors.IsNotFound(err) {
 			return err
 		}
 
@@ -86,12 +87,7 @@ func (b *Build) ejsonWalk(path string, info fs.FileInfo, err error) error {
 		decrypted := false
 
 		// No decryption requested, just read the file
-		if b.cfg.SkipDecryption {
-			data, err = ioutil.ReadFile(path)
-			if err != nil {
-				return err
-			}
-		} else {
+		if !b.cfg.SkipDecrypt {
 			// try to decrypt the file
 			file, err := os.Open(path)
 			if err != nil {
@@ -110,8 +106,16 @@ func (b *Build) ejsonWalk(path string, info fs.FileInfo, err error) error {
 				}
 			}
 
-			if !decrypted {
-				return fmt.Errorf("%s: Could not decrypt with given keys. Consider skipping decryption", path)
+			if b.cfg.MustDecrypt && !decrypted {
+				return fmt.Errorf("%s: Could not decrypt with given keys", path)
+			}
+		}
+
+		// Load file without decryption
+		if !decrypted {
+			data, err = ioutil.ReadFile(path)
+			if err != nil {
+				return err
 			}
 		}
 

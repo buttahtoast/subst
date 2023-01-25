@@ -6,9 +6,9 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/buttahtoast/subst/pkg/config"
 	"github.com/buttahtoast/subst/pkg/subst"
+	"github.com/buttahtoast/subst/pkg/utils"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
-	"gopkg.in/yaml.v2"
 )
 
 func newRenderCmd() *cobra.Command {
@@ -32,10 +32,15 @@ func addRenderFlags(flags *flag.FlagSet) {
 	        Specify EJSON Secret name (each key within the secret will be used as a decryption key)`))
 	flags.String("ejson-namespace", "", heredoc.Doc(`
 	        Specify EJSON Secret namespace`))
+	flags.String("env-regex", "^ARGOCD_ENV_.*$", heredoc.Doc(`
+	        Only expose environment variables that match the given regex`))
 	flags.StringSlice("ejson-key", []string{}, heredoc.Doc(`
 			Specify EJSON Private key used for decryption.
 			May be specified multiple times or separate values with commas`))
-	flags.Bool("skip-decryption", false, heredoc.Doc(`
+	flags.Bool("must-decrypt", false, heredoc.Doc(`
+			Fail if not all ejson files can be decrypted`))
+
+	flags.Bool("skip-decrypt", false, heredoc.Doc(`
 			Disable decryption of EJSON files`))
 	flags.Bool("skip-eval", false, heredoc.Doc(`
 			Skip Spruce evaluation for all files (Useful if required variables are not available)`))
@@ -58,11 +63,7 @@ func render(cmd *cobra.Command, args []string) error {
 		}
 		if m.Manifests != nil {
 			for _, f := range m.Manifests {
-				y, err := yaml.Marshal(f)
-				if err != nil {
-					return err
-				}
-				fmt.Printf("---\n%s\n", string(y))
+				utils.PrintYAML(f)
 			}
 		}
 	}

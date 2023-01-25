@@ -14,13 +14,15 @@ import (
 )
 
 type Configuration struct {
+	AllowedEnvRegex      string        `mapstructure:"env-regex"`
 	RootDirectory        string        `mapstructure:"root-dir"`
 	ExtraDirectories     []string      `mapstructure:"extra-dirs"`
 	EjsonFilePattern     string        `mapstructure:"ejson-pattern"`
 	EjsonSecret          string        `mapstructure:"ejson-secret"`
 	EjsonSecretNamespace string        `mapstructure:"ejson-namespace"`
 	EjsonKey             []string      `mapstructure:"ejson-key"`
-	SkipDecryption       bool          `mapstructure:"skip-decryption"`
+	SkipDecrypt          bool          `mapstructure:"skip-decrypt"`
+	MustDecrypt          bool          `mapstructure:"must-decrypt"`
 	SkipEvaluation       bool          `mapstructure:"skip-eval"`
 	VarFilePattern       string        `mapstructure:"vars-pattern"`
 	Debug                bool          `mapstructure:"debug"`

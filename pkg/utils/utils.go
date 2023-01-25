@@ -1,9 +1,12 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"gopkg.in/yaml.v2"
 )
 
 func ConvertPath(path string) string {
@@ -35,4 +38,24 @@ func MkdirTempAbs(dir, pattern string) (string, error) {
 		return "", fmt.Errorf("error evaluating symlink: %w", err)
 	}
 	return tmpDir, nil
+}
+
+/* create a golang function which prints map[interface{}]interface{} as yaml */
+func PrintYAML(data map[interface{}]interface{}) error {
+	y, err := yaml.Marshal(data)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("---\n%s\n", string(y))
+	return err
+}
+
+/* create a golang function which prints map[interface{}]interface{} as json */
+func PrintJSON(data map[interface{}]interface{}) error {
+	j, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s\n", string(j))
+	return err
 }

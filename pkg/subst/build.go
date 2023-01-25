@@ -62,6 +62,13 @@ func (b *Build) gatherSubstituions() (err error) {
 		return err
 	}
 
+	// Gather Environment
+	err = b.readEnvironment()
+	if err != nil {
+		return err
+	}
+
+	// Gather EJSON
 	err = b.runEjson()
 	if err != nil {
 		return err
@@ -85,12 +92,18 @@ func (b *Build) Build() error {
 	}
 
 	// Run Spruce
-	for _, manifest := range manifests.Resources() {
+	for _, raw := range manifests.Resources() {
+
+		// Environment Substitution
+		manifest, err := b.envsubst(raw)
+		if err != nil {
+			return err
+		}
 
 		// Load Single Manifest
 		m, _ := manifest.AsYAML()
 		var str map[interface{}]interface{}
-		err := yaml.Unmarshal(m, &str)
+		err = yaml.Unmarshal(m, &str)
 		if err != nil {
 			return err
 		}

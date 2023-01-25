@@ -11,6 +11,7 @@ spec:
     metadata:
       labels:
         app: external-dns
+        subst: ${TEST:-none}
     spec:
       serviceAccountName: external-dns
       containers:
