@@ -3,8 +3,6 @@ package subst
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
@@ -14,7 +12,6 @@ import (
 	"github.com/Shopify/ejson"
 	"github.com/buttahtoast/subst/pkg/utils"
 	"github.com/geofffranks/spruce"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -48,17 +45,17 @@ func (b *Build) loadEjsonKeys() error {
 
 		// Get the secret
 		secret, err := b.kubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
-		if err != nil && !k8serrors.IsNotFound(err) {
+		//if err != nil && !k8serrors.IsNotFound(err) {
+		//	return err
+		//}
+		if err != nil {
 			return err
 		}
 
 		// add all keys to
 		for s := range secret.Data {
-			decodedData, err := base64.StdEncoding.DecodeString(string(secret.Data[s]))
-			if err != nil {
-				return err
-			}
-			b.keys = append(b.keys, string(decodedData))
+			key := string(secret.Data[s])
+			b.keys = append(b.keys, key)
 		} // Read from Kubernetes Secret
 	}
 
@@ -107,18 +104,16 @@ func (b *Build) ejsonWalk(path string, info fs.FileInfo, err error) error {
 		}
 
 		// Extract data key from ejson file
-		i := make(map[string]interface{})
-		err := json.Unmarshal([]byte(data), &i)
+		d, err := utils.ParseYAML(data)
 		if err != nil {
 			return err
 		}
 		// Remove Public Key information
-		delete(i, publicKeyField)
+		delete(d, publicKeyField)
 
-		c := utils.ConvertMap(i)
-
-		b.Substitutions.Subst, err = spruce.Merge(b.Substitutions.Subst, c)
+		b.Substitutions.Subst, err = spruce.Merge(b.Substitutions.Subst, d)
 		if err != nil {
+			fmt.Println("t1: %s\n", (err))
 			return err
 		}
 	}

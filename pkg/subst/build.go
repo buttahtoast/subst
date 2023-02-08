@@ -23,7 +23,8 @@ type Build struct {
 }
 
 type Substitutions struct {
-	Subst map[interface{}]interface{} `yaml:"subst"`
+	Subst  map[interface{}]interface{} `yaml:"subst"`
+	merger spruce.Merger
 }
 
 func (s *Substitutions) tointerface() (map[interface{}]interface{}, error) {
@@ -36,6 +37,16 @@ func (s *Substitutions) tointerface() (map[interface{}]interface{}, error) {
 	return tmp, err
 }
 
+func (s *Substitutions) merge(doc map[interface{}]interface{}) (map[interface{}]interface{}, error) {
+	root, err := s.tointerface()
+	t := root["subst"].(map[interface{}]interface{})
+	if err != nil {
+		return nil, err
+	}
+	s.merger.Merge(t, doc)
+	return t, nil
+}
+
 func New(config config.Configuration) (build *Build, err error) {
 	result := &Build{
 		root: config.RootDirectory,
@@ -43,7 +54,11 @@ func New(config config.Configuration) (build *Build, err error) {
 		keys: config.EjsonKey,
 	}
 
-	result.Substitutions.Subst = make(map[interface{}]interface{})
+	// Init Substitutions
+	result.Substitutions = Substitutions{
+		Subst:  make(map[interface{}]interface{}),
+		merger: spruce.Merger{AppendByDefault: true},
+	}
 
 	// Load Kubernetes Client
 	cfg, err := clientcmd.BuildConfigFromFlags("", result.cfg.Kubeconfig)

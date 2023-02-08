@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/geofffranks/simpleyaml"
+	"github.com/starkandwayne/goutils/ansi"
 	"gopkg.in/yaml.v2"
 )
 
@@ -23,6 +25,30 @@ func ConvertMap(inputMap map[string]interface{}) map[interface{}]interface{} {
 		convertedMap[key] = value
 	}
 	return convertedMap
+}
+
+// Convert YAML/JSON data to a map[interface{}]interface{}.
+func ParseYAML(data []byte) (map[interface{}]interface{}, error) {
+	y, err := simpleyaml.NewYaml(data)
+	if err != nil {
+		return nil, err
+	}
+
+	if empty_y, _ := simpleyaml.NewYaml([]byte{}); *y == *empty_y {
+		fmt.Println("YAML doc is empty, creating empty hash/map")
+		return make(map[interface{}]interface{}), nil
+	}
+
+	doc, err := y.Map()
+
+	if err != nil {
+		if _, arrayErr := y.Array(); arrayErr == nil {
+			return nil, err
+		}
+		return nil, ansi.Errorf("@R{Root of YAML document is not a hash/map}: %s\n", err.Error())
+	}
+
+	return doc, nil
 }
 
 // MkdirTempAbs creates a tmp dir and returns the absolute path to the dir.
