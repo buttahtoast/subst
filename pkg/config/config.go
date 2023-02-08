@@ -19,6 +19,7 @@ type Configuration struct {
 	ExtraDirectories     []string      `mapstructure:"extra-dirs"`
 	EjsonFilePattern     string        `mapstructure:"ejson-pattern"`
 	EjsonSecret          string        `mapstructure:"ejson-secret"`
+	SopsSecret           string        `mapstructure:"sops-secret"`
 	EjsonSecretNamespace string        `mapstructure:"ejson-namespace"`
 	EjsonKey             []string      `mapstructure:"ejson-key"`
 	SkipDecrypt          bool          `mapstructure:"skip-decrypt"`
