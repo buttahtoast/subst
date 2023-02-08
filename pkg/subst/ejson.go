@@ -16,8 +16,6 @@ import (
 	"github.com/geofffranks/spruce"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 const (
@@ -44,23 +42,12 @@ func (b *Build) loadEjsonKeys() error {
 	// try to use k8s secrets
 	secretName := b.cfg.EjsonSecret
 	if secretName != "" {
-		// Create a new rest config
-		cfg, err := rest.InClusterConfig()
-		if err != nil {
-			return err
-		}
-
-		// Create a new clientset
-		clientset, err := kubernetes.NewForConfig(cfg)
-		if err != nil {
-			return err
-		}
 
 		// Set the namespace and secret name
 		namespace := b.cfg.EjsonSecretNamespace
 
 		// Get the secret
-		secret, err := clientset.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
+		secret, err := b.kubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
 		if err != nil && !k8serrors.IsNotFound(err) {
 			return err
 		}

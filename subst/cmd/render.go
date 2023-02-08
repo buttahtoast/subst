@@ -28,6 +28,9 @@ func newRenderCmd() *cobra.Command {
 }
 
 func addRenderFlags(flags *flag.FlagSet) {
+	if flags.Lookup("kubeconfig") == nil {
+		flags.String("kubeconfig", "", "Path to a kubeconfig")
+	}
 	flags.String("ejson-secret", "", heredoc.Doc(`
 	        Specify EJSON Secret name (each key within the secret will be used as a decryption key)`))
 	flags.String("ejson-namespace", "", heredoc.Doc(`
@@ -39,7 +42,6 @@ func addRenderFlags(flags *flag.FlagSet) {
 			May be specified multiple times or separate values with commas`))
 	flags.Bool("must-decrypt", false, heredoc.Doc(`
 			Fail if not all ejson files can be decrypted`))
-
 	flags.Bool("skip-decrypt", false, heredoc.Doc(`
 			Disable decryption of EJSON files`))
 	flags.Bool("skip-eval", false, heredoc.Doc(`

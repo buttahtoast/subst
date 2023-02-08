@@ -31,24 +31,28 @@ func (b *Build) readEnvironment() error {
 		key := pair[0]
 		value := pair[1]
 
-		// Verify if regexp matches (Skip no matches)
-		if b.cfg.AllowedEnvRegex != "" {
-			r, err := regexp.Compile(b.cfg.AllowedEnvRegex)
-			if err != nil {
-				return err
+		if value != "" {
+			// Verify if regexp matches (Skip no matches)
+			if b.cfg.AllowedEnvRegex != "" {
+				r, err := regexp.Compile(b.cfg.AllowedEnvRegex)
+				if err != nil {
+					return err
+				}
+				if !r.MatchString(key) {
+					continue
+				}
 			}
-			if !r.MatchString(key) {
-				continue
+			// Rewrite ArgoCD Environment Variables
+			argoRegex := regexp.MustCompile("^ARGOCD_ENV_")
+			if argoRegex.MatchString(key) {
+				key = strings.ReplaceAll(key, "ARGOCD_ENV_", "")
 			}
+			envs[key] = value
 		}
-		// Rewrite ArgoCD Environment Variables
-		argoRegex := regexp.MustCompile("^ARGOCD_ENV_")
-		if argoRegex.MatchString(key) {
-			key = strings.ReplaceAll(key, "ARGOCD_ENV_", "")
-		}
-		envs[key] = value
 	}
-	if envs != nil {
+
+	if len(envs) > 0 {
+		b.Substitutions.Subst["env"] = make(map[string]string)
 		b.Substitutions.Subst["env"] = envs
 	}
 
@@ -71,26 +75,26 @@ func (b *Build) envsubst(res *resource.Resource) (*resource.Resource, error) {
 
 		if len(vars) > 0 {
 			r, _ := regexp.Compile(varsubRegex)
+
 			for v := range vars {
 				if !r.MatchString(v) {
 					return nil, fmt.Errorf("'%s' var name is invalid, must match '%s'", v, varsubRegex)
 				}
 			}
-			output, err := envsubst.Eval(string(resData), func(s string) string {
-				return vars[s]
-			})
-			if err != nil {
-				return nil, fmt.Errorf("variable substitution failed: %w", err)
-			}
-
-			jsonData, err := yaml.YAMLToJSON([]byte(output))
-			if err != nil {
-				return nil, fmt.Errorf("YAMLToJSON: %w", err)
-			}
-			err = res.UnmarshalJSON(jsonData)
-			if err != nil {
-				return nil, fmt.Errorf("UnmarshalJSON: %w", err)
-			}
+		}
+		output, err := envsubst.Eval(string(resData), func(s string) string {
+			return vars[s]
+		})
+		if err != nil {
+			return nil, fmt.Errorf("variable substitution failed: %w", err)
+		}
+		jsonData, err := yaml.YAMLToJSON([]byte(output))
+		if err != nil {
+			return nil, fmt.Errorf("YAMLToJSON: %w", err)
+		}
+		err = res.UnmarshalJSON(jsonData)
+		if err != nil {
+			return nil, fmt.Errorf("UnmarshalJSON: %w", err)
 		}
 	}
 

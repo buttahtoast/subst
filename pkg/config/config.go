@@ -27,6 +27,7 @@ type Configuration struct {
 	VarFilePattern       string        `mapstructure:"vars-pattern"`
 	Debug                bool          `mapstructure:"debug"`
 	KubectlTimeout       time.Duration `mapstructure:"kubectl-timeout"`
+	Kubeconfig           string        `mapstructure:"kubeconfig"`
 }
 
 var (

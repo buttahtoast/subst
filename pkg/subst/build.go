@@ -6,6 +6,8 @@ import (
 	"github.com/buttahtoast/subst/pkg/config"
 	"github.com/geofffranks/spruce"
 	"gopkg.in/yaml.v2"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/kustomize/api/resmap"
 )
 
@@ -16,6 +18,8 @@ type Build struct {
 	Substitutions Substitutions
 	keys          []string
 	cfg           config.Configuration
+	// kubeClient a client that knows how to consume kubernetes API.
+	kubeClient *kubernetes.Clientset
 }
 
 type Substitutions struct {
@@ -37,6 +41,19 @@ func New(config config.Configuration) (build *Build, err error) {
 		root: config.RootDirectory,
 		cfg:  config,
 		keys: config.EjsonKey,
+	}
+
+	result.Substitutions.Subst = make(map[interface{}]interface{})
+
+	// Load Kubernetes Client
+	cfg, err := clientcmd.BuildConfigFromFlags("", result.cfg.Kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	result.kubeClient, err = kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return nil, err
 	}
 
 	// Gather all releveant paths

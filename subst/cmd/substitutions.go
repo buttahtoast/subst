@@ -36,7 +36,7 @@ func substitutions(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if m != nil {
-		if m.Substitutions.Subst != nil {
+		if len(m.Substitutions.Subst) > 0 {
 			fmt.Printf("%v", m.Paths)
 
 			y, err := yaml.Marshal(m.Substitutions)
