@@ -31,6 +31,9 @@ func addRenderFlags(flags *flag.FlagSet) {
 	if flags.Lookup("kubeconfig") == nil {
 		flags.String("kubeconfig", "", "Path to a kubeconfig")
 	}
+	if flags.Lookup("kube-api") == nil {
+		flags.String("kube-api", "", "Kubernetes API Url")
+	}
 	flags.String("ejson-secret", "", heredoc.Doc(`
 	        Specify EJSON Secret name (each key within the secret will be used as a decryption key)`))
 	flags.String("ejson-namespace", "", heredoc.Doc(`

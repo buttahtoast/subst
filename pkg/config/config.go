@@ -29,6 +29,7 @@ type Configuration struct {
 	Debug                bool          `mapstructure:"debug"`
 	KubectlTimeout       time.Duration `mapstructure:"kubectl-timeout"`
 	Kubeconfig           string        `mapstructure:"kubeconfig"`
+	KubeAPI              string        `mapstructure:"kube-api"`
 }
 
 var (

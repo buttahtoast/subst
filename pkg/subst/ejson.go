@@ -12,6 +12,7 @@ import (
 	"github.com/Shopify/ejson"
 	"github.com/buttahtoast/subst/pkg/utils"
 	"github.com/geofffranks/spruce"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -45,10 +46,7 @@ func (b *Build) loadEjsonKeys() error {
 
 		// Get the secret
 		secret, err := b.kubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
-		//if err != nil && !k8serrors.IsNotFound(err) {
-		//	return err
-		//}
-		if err != nil {
+		if err != nil && !k8serrors.IsNotFound(err) {
 			return err
 		}
 
@@ -113,7 +111,6 @@ func (b *Build) ejsonWalk(path string, info fs.FileInfo, err error) error {
 
 		b.Substitutions.Subst, err = spruce.Merge(b.Substitutions.Subst, d)
 		if err != nil {
-			fmt.Println("t1: %s\n", (err))
 			return err
 		}
 	}

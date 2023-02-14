@@ -61,14 +61,16 @@ func New(config config.Configuration) (build *Build, err error) {
 	}
 
 	// Load Kubernetes Client
-	cfg, err := clientcmd.BuildConfigFromFlags("", result.cfg.Kubeconfig)
-	if err != nil {
-		return nil, err
+	var host string
+	if config.KubeAPI != "" {
+		host = config.KubeAPI
 	}
-
-	result.kubeClient, err = kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return nil, err
+	cfg, err := clientcmd.BuildConfigFromFlags(host, result.cfg.Kubeconfig)
+	if err == nil {
+		result.kubeClient, err = kubernetes.NewForConfig(cfg)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Gather all releveant paths
