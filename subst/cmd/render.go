@@ -7,6 +7,7 @@ import (
 	"github.com/buttahtoast/subst/pkg/config"
 	"github.com/buttahtoast/subst/pkg/subst"
 	"github.com/buttahtoast/subst/pkg/utils"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 )
@@ -59,11 +60,13 @@ func render(cmd *cobra.Command, args []string) error {
 	}
 	m, err := subst.New(*configuration)
 	if err != nil {
+		logrus.Error(err)
 		return err
 	}
 	if m != nil {
 		err = m.Build()
 		if err != nil {
+			logrus.Error(err)
 			return err
 		}
 		if m.Manifests != nil {

@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
 
 	"github.com/spf13/cobra"
@@ -16,7 +17,6 @@ import (
 type Configuration struct {
 	AllowedEnvRegex      string        `mapstructure:"env-regex"`
 	RootDirectory        string        `mapstructure:"root-dir"`
-	ExtraDirectories     []string      `mapstructure:"extra-dirs"`
 	EjsonFilePattern     string        `mapstructure:"ejson-pattern"`
 	EjsonSecret          string        `mapstructure:"ejson-secret"`
 	SopsSecret           string        `mapstructure:"sops-secret"`
@@ -63,6 +63,8 @@ func LoadConfiguration(cfgFile string, cmd *cobra.Command) (*Configuration, erro
 		}
 	}
 
+	logrus.Debug(fmt.Printf("Using configuration file: %s", cfgFile))
+
 	if err := v.ReadInConfig(); err != nil {
 		if cfgFile != "" {
 			// Only error out for specified config file. Ignore for default locations.
@@ -82,6 +84,8 @@ func LoadConfiguration(cfgFile string, cmd *cobra.Command) (*Configuration, erro
 	} else {
 		cfg.RootDirectory = rootAbs
 	}
+
+	logrus.Debugf("Configuration: %+v\n", cfg)
 
 	return cfg, nil
 

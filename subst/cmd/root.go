@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
 
 	"github.com/MakeNowJust/heredoc"
@@ -12,6 +14,7 @@ import (
 
 var (
 	cfgFile string
+	v       string
 )
 
 func NewRootCmd() *cobra.Command {
@@ -23,11 +26,22 @@ func NewRootCmd() *cobra.Command {
 		SilenceUsage: true,
 	}
 
+	//Here is where we define the PreRun func, using the verbose flag value
+	//We use the standard output for logs.
+	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		if err := setUpLogs(os.Stdout, v); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	//Default value is the warn level
+	cmd.PersistentFlags().StringVarP(&v, "verbosity", "v", logrus.WarnLevel.String(), "Log level (debug, info, warn, error, fatal, panic")
+
 	cmd.AddCommand(newDiscoverCmd())
 	cmd.AddCommand(newVersionCmd())
 	cmd.AddCommand(newGenerateDocsCmd())
 	cmd.AddCommand(newRenderCmd())
-	cmd.AddCommand(newConfigCmd())
 	cmd.AddCommand(newSubstitutionsCmd())
 	//
 
@@ -42,6 +56,17 @@ func Execute() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+// setUpLogs set the log output ans the log level
+func setUpLogs(out io.Writer, level string) error {
+	logrus.SetOutput(out)
+	lvl, err := logrus.ParseLevel(level)
+	if err != nil {
+		return err
+	}
+	logrus.SetLevel(lvl)
+	return nil
 }
 
 func addCommonFlags(flags *flag.FlagSet) {

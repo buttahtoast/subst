@@ -7,10 +7,12 @@ import (
 
 	"github.com/Shopify/ejson"
 	"github.com/buttahtoast/subst/pkg/utils"
+	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 )
-
-// k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 const (
 	publicKeyField = "_public_key"
@@ -24,19 +26,31 @@ func (b *Build) loadEjsonKeys() error {
 
 		// Set the namespace and secret name
 		namespace := b.cfg.EjsonSecretNamespace
+		klog.SetLogger(logr.Discard())
 
 		// Get the secret
 		secret, err := b.kubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
-		if err != nil {
+
+		if k8serrors.IsNotFound(err) {
+			logrus.Debug("Could not find secret: %s/%s", namespace, secretName)
+		} else if err != nil {
 			return err
 		}
 
 		// add all keys to
 		for s := range secret.Data {
 			key := string(secret.Data[s])
+			logrus.Debug("Loaded EJSON key: ", key)
 			b.keys = append(b.keys, key)
 		} // Read from Kubernetes Secret
 	}
+
+	if len(b.keys) == 0 {
+		logrus.Debug("No EJSON keys laoded")
+	} else {
+		logrus.Debug("Found EJSON Keys: ", b.keys)
+	}
+
 	return nil
 }
 
@@ -52,6 +66,7 @@ func (b *Build) decrypt(file utils.File) (err error, d map[interface{}]interface
 		for key := range b.keys {
 			err = ejson.Decrypt(f, &outBuffer, "", b.keys[key])
 			if err != nil {
+				logrus.Debug(fmt.Print("Attempt tp decrypt failed %s: %s", file.Path, err))
 				continue
 			} else {
 				data = outBuffer.Bytes()
