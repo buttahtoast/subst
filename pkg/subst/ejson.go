@@ -4,36 +4,17 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/fs"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 
 	"github.com/Shopify/ejson"
 	"github.com/buttahtoast/subst/pkg/utils"
-	"github.com/geofffranks/spruce"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 const (
 	publicKeyField = "_public_key"
 )
-
-func (b *Build) runEjson() error {
-	if !b.cfg.SkipDecrypt {
-		err := b.loadEjsonKeys()
-		if err != nil {
-			return err
-		}
-	}
-	err := b.walkpaths(b.ejsonWalk)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 // Evaluates given EJSON Keys
 func (b *Build) loadEjsonKeys() error {
@@ -46,7 +27,7 @@ func (b *Build) loadEjsonKeys() error {
 
 		// Get the secret
 		secret, err := b.kubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
-		if err != nil && !k8serrors.IsNotFound(err) {
+		if err != nil {
 			return err
 		}
 
@@ -56,64 +37,42 @@ func (b *Build) loadEjsonKeys() error {
 			b.keys = append(b.keys, key)
 		} // Read from Kubernetes Secret
 	}
-
 	return nil
 }
 
-func (b *Build) ejsonWalk(path string, info fs.FileInfo, err error) error {
+func (b *Build) decrypt(file utils.File) (err error, d map[interface{}]interface{}) {
 	var (
-		data      []byte
 		outBuffer bytes.Buffer
 	)
-	if filepath.Ext(path) == b.cfg.EjsonFilePattern {
-		decrypted := false
+	data := file.Byte()
+	decrypted := false
+	f := bytes.NewReader(data)
 
-		// No decryption requested, just read the file
-		if !b.cfg.SkipDecrypt {
-			// try to decrypt the file
-			file, err := os.Open(path)
+	if !b.cfg.SkipDecrypt {
+		for key := range b.keys {
+			err = ejson.Decrypt(f, &outBuffer, "", b.keys[key])
 			if err != nil {
-				return err
-			}
-			defer file.Close()
-
-			for key := range b.keys {
-				err = ejson.Decrypt(file, &outBuffer, "", b.keys[key])
-				if err != nil {
-					continue
-				} else {
-					data = outBuffer.Bytes()
-					decrypted = true
-					break
-				}
-			}
-
-			if b.cfg.MustDecrypt && !decrypted {
-				return fmt.Errorf("%s: Could not decrypt with given keys", path)
+				continue
+			} else {
+				data = outBuffer.Bytes()
+				decrypted = true
+				break
 			}
 		}
 
-		// Load file without decryption
-		if !decrypted {
-			data, err = ioutil.ReadFile(path)
-			if err != nil {
-				return err
-			}
+		if b.cfg.MustDecrypt && !decrypted {
+			return fmt.Errorf("%s: Could not decrypt with given keys", file.Path), nil
 		}
 
-		// Extract data key from ejson file
-		d, err := utils.ParseYAML(data)
-		if err != nil {
-			return err
-		}
-		// Remove Public Key information
-		delete(d, publicKeyField)
-
-		b.Substitutions.Subst, err = spruce.Merge(b.Substitutions.Subst, d)
-		if err != nil {
-			return err
-		}
 	}
 
-	return err
+	// Extract data key from ejson file
+	y, err := utils.ParseYAML(data)
+	if err != nil {
+		return err, nil
+	}
+	// Remove Public Key information
+	delete(y, publicKeyField)
+
+	return err, y
 }

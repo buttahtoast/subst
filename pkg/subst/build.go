@@ -1,9 +1,12 @@
 package subst
 
 import (
+	"fmt"
+	"io/fs"
 	"path/filepath"
 
 	"github.com/buttahtoast/subst/pkg/config"
+	"github.com/buttahtoast/subst/pkg/utils"
 	"github.com/geofffranks/spruce"
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
@@ -79,36 +82,27 @@ func New(config config.Configuration) (build *Build, err error) {
 		return nil, err
 	}
 
-	// Gather all available substitutions
-	err = result.gatherSubstituions()
+	// Load Decryption Keys
+	if !result.cfg.SkipDecrypt {
+		err = result.loadEjsonKeys()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Gather Environment
+	err = result.readEnvironment()
+	if err != nil {
+		return nil, err
+	}
+
+	// Read Substition Files
+	err = result.walkpaths(result.substFiles)
 	if err != nil {
 		return nil, err
 	}
 
 	return result, err
-}
-
-func (b *Build) gatherSubstituions() (err error) {
-
-	// Read Vars Files
-	err = b.walkpaths(b.varsWalk)
-	if err != nil {
-		return err
-	}
-
-	// Gather Environment
-	err = b.readEnvironment()
-	if err != nil {
-		return err
-	}
-
-	// Gather EJSON
-	err = b.runEjson()
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (b *Build) Build() error {
@@ -162,6 +156,40 @@ func (b *Build) Build() error {
 	}
 
 	return nil
+}
+
+func (b *Build) substFiles(path string, info fs.FileInfo, err error) error {
+
+	// Load File
+	ext := filepath.Ext(path)
+	if ext == b.cfg.VarFilePattern || ext == b.cfg.EjsonFilePattern {
+		var c map[interface{}]interface{}
+		file, err := utils.NewFile(path)
+		if err != nil {
+			return err
+		}
+
+		switch ext {
+		case b.cfg.VarFilePattern:
+			c, err = file.SPRUCE()
+			if err != nil {
+				return fmt.Errorf("Encountered error %s: %s", path, err)
+			}
+		case b.cfg.EjsonFilePattern:
+			err, c = b.decrypt(*file)
+			if err != nil {
+				return fmt.Errorf("failed to read %s: %s", path, err)
+			}
+		}
+
+		// Merge Substitutions
+		b.Substitutions.Subst, err = spruce.Merge(b.Substitutions.Subst, c)
+		if err != nil {
+			return err
+		}
+
+	}
+	return err
 }
 
 // Generic funtion to walk all paths and run a function on each file

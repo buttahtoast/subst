@@ -7,54 +7,65 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type file struct {
-	data map[interface{}]interface{}
-	path string
+type File struct {
+	data []byte
+	Path string
 }
 
-func NewFile(path string) (*file, error) {
-	result := &file{
-		path: path,
+func NewFile(path string) (*File, error) {
+	result := &File{
+		Path: path,
 	}
-	err := result.loadMap()
+	data, err := result.load()
+	if err != nil {
+		return nil, err
+	}
+	result.data = data
 	return result, err
 }
 
-func (f *file) loadMap() error {
-	data, err := f.load()
-	if err != nil {
-		return err
-	}
-
-	err = yaml.Unmarshal(data, &f.data)
-	if err != nil {
-		return err
-	}
-
-	if f.data == nil {
-		f.data = make(map[interface{}]interface{})
-	}
-
-	return nil
-}
-
-func (f *file) load() ([]byte, error) {
+func (f *File) load() ([]byte, error) {
 	var data []byte
-	data, err := ioutil.ReadFile(f.path)
+	data, err := ioutil.ReadFile(f.Path)
 	if err != nil {
 		return nil, err
 	}
 	return data, nil
 }
 
-func (f *file) Map() map[interface{}]interface{} {
+func (f *File) Byte() []byte {
 	return f.data
 }
 
-func (f *file) YAML() ([]byte, error) {
-	return yaml.Marshal(f.data)
+func (f *File) Map() (map[interface{}]interface{}, error) {
+	data := make(map[interface{}]interface{})
+	err := yaml.Unmarshal(f.data, &data)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
-func (f *file) JSON() ([]byte, error) {
-	return json.Marshal(f.data)
+func (f *File) YAML() ([]byte, error) {
+	d, err := f.Map()
+	if err != nil {
+		return nil, err
+	}
+	return yaml.Marshal(d)
+}
+
+func (f *File) JSON() ([]byte, error) {
+	d, err := f.Map()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(d)
+}
+
+func (f *File) SPRUCE() (map[interface{}]interface{}, error) {
+	data, err := f.YAML()
+	if err != nil {
+		return nil, err
+	}
+	return ParseYAML(data)
 }
