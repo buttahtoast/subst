@@ -66,7 +66,7 @@ func (b *Build) decrypt(file utils.File) (err error, d map[interface{}]interface
 		for key := range b.keys {
 			err = ejson.Decrypt(f, &outBuffer, "", b.keys[key])
 			if err != nil {
-				logrus.Debug(fmt.Print("Attempt tp decrypt failed %s: %s", file.Path, err))
+				logrus.Debug("Attempt tp decrypt failed ", file.Path)
 				continue
 			} else {
 				data = outBuffer.Bytes()
@@ -76,7 +76,13 @@ func (b *Build) decrypt(file utils.File) (err error, d map[interface{}]interface
 		}
 
 		if b.cfg.MustDecrypt && !decrypted {
-			return fmt.Errorf("%s: Could not decrypt with given keys", file.Path), nil
+			// We could not decrypt the file
+			if err.Error() == "invalid message format" {
+
+			} else {
+				return fmt.("%s: Could not decrypt with given keys", file.Path), nil
+			}
+			return fmt.Print("%s: Could not decrypt with given keys", file.Path), nil
 		}
 
 	}
