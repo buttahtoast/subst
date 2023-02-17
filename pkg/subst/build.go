@@ -176,7 +176,7 @@ func (b *Build) substFiles(path string, info fs.FileInfo, err error) error {
 				return fmt.Errorf("Encountered error %s: %s", path, err)
 			}
 		case b.cfg.EjsonFilePattern:
-			err, c = b.decrypt(*file)
+			c, err = b.decrypt(*file)
 			if err != nil {
 				return fmt.Errorf("failed to read %s: %s", path, err)
 			}

@@ -29,20 +29,22 @@ func (b *Build) loadEjsonKeys() error {
 		klog.SetLogger(logr.Discard())
 
 		// Get the secret
-		secret, err := b.kubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
+		if b.kubeClient != nil {
+			secret, err := b.kubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
+			if k8serrors.IsNotFound(err) {
+				logrus.Debug("Could not find secret: %s/%s", namespace, secretName)
+			} else if err != nil {
+				return err
+			}
 
-		if k8serrors.IsNotFound(err) {
-			logrus.Debug("Could not find secret: %s/%s", namespace, secretName)
-		} else if err != nil {
-			return err
+			// add all keys to
+			for s := range secret.Data {
+				key := string(secret.Data[s])
+				logrus.Debug("Loaded EJSON key: ", key)
+				b.keys = append(b.keys, key)
+			} // Read from Kubernetes Secret
+
 		}
-
-		// add all keys to
-		for s := range secret.Data {
-			key := string(secret.Data[s])
-			logrus.Debug("Loaded EJSON key: ", key)
-			b.keys = append(b.keys, key)
-		} // Read from Kubernetes Secret
 	}
 
 	if len(b.keys) == 0 {
@@ -54,7 +56,7 @@ func (b *Build) loadEjsonKeys() error {
 	return nil
 }
 
-func (b *Build) decrypt(file utils.File) (err error, d map[interface{}]interface{}) {
+func (b *Build) decrypt(file utils.File) (d map[interface{}]interface{}, err error) {
 	var (
 		outBuffer bytes.Buffer
 	)
@@ -76,13 +78,12 @@ func (b *Build) decrypt(file utils.File) (err error, d map[interface{}]interface
 		}
 
 		if b.cfg.MustDecrypt && !decrypted {
+			e := fmt.Errorf("%s: Could not decrypt with given keys", file.Path)
 			// We could not decrypt the file
-			if err.Error() == "invalid message format" {
-
-			} else {
-				return fmt.("%s: Could not decrypt with given keys", file.Path), nil
+			if err != nil && err.Error() == "invalid message format" {
+				e = fmt.Errorf("%s: File is not encrypted with ejson", file.Path)
 			}
-			return fmt.Print("%s: Could not decrypt with given keys", file.Path), nil
+			return nil, e
 		}
 
 	}
@@ -90,10 +91,10 @@ func (b *Build) decrypt(file utils.File) (err error, d map[interface{}]interface
 	// Extract data key from ejson file
 	y, err := utils.ParseYAML(data)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 	// Remove Public Key information
 	delete(y, publicKeyField)
 
-	return err, y
+	return y, err
 }
