@@ -43,7 +43,19 @@ func substitutions(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("\nAvailable for substitution: \n\n" + string(y))
+			fmt.Println("\nAvailable for substitution: \n\n" + string(y))
+
+			f, err := m.Substitutions.Flatten()
+			if err != nil {
+				return err
+			}
+
+			e, err := yaml.Marshal(f)
+			if err != nil {
+				return err
+			}
+
+			fmt.Println("\nFlattened (Environment Variable Style): \n\n" + string(e))
 
 		}
 	}

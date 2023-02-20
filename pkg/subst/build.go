@@ -25,31 +25,6 @@ type Build struct {
 	kubeClient *kubernetes.Clientset
 }
 
-type Substitutions struct {
-	Subst  map[interface{}]interface{} `yaml:"subst"`
-	merger spruce.Merger
-}
-
-func (s *Substitutions) tointerface() (map[interface{}]interface{}, error) {
-	tmp := make(map[interface{}]interface{})
-	yml, err := yaml.Marshal(s)
-	if err != nil {
-		return nil, err
-	}
-	err = yaml.Unmarshal(yml, tmp)
-	return tmp, err
-}
-
-func (s *Substitutions) merge(doc map[interface{}]interface{}) (map[interface{}]interface{}, error) {
-	root, err := s.tointerface()
-	t := root["subst"].(map[interface{}]interface{})
-	if err != nil {
-		return nil, err
-	}
-	s.merger.Merge(t, doc)
-	return t, nil
-}
-
 func New(config config.Configuration) (build *Build, err error) {
 	result := &Build{
 		root: config.RootDirectory,
@@ -59,8 +34,7 @@ func New(config config.Configuration) (build *Build, err error) {
 
 	// Init Substitutions
 	result.Substitutions = Substitutions{
-		Subst:  make(map[interface{}]interface{}),
-		merger: spruce.Merger{AppendByDefault: true},
+		Subst: make(map[interface{}]interface{}),
 	}
 
 	// Load Kubernetes Client
@@ -113,20 +87,8 @@ func (b *Build) Build() error {
 		return err
 	}
 
-	// Load Substitutions
-	substs, err := b.Substitutions.tointerface()
-	if err != nil {
-		return err
-	}
-
 	// Run Spruce
-	for _, raw := range manifests.Resources() {
-
-		// Environment Substitution
-		manifest, err := b.envsubst(raw)
-		if err != nil {
-			return err
-		}
+	for _, manifest := range manifests.Resources() {
 
 		// Load Single Manifest
 		m, _ := manifest.AsYAML()
@@ -136,7 +98,7 @@ func (b *Build) Build() error {
 			return err
 		}
 
-		substManifest, err := spruce.Merge(str, substs)
+		substManifest, err := spruce.Merge(str, b.Substitutions.Subst)
 		if err != nil {
 			return err
 		}
@@ -152,7 +114,15 @@ func (b *Build) Build() error {
 		if err != nil {
 			return err
 		}
-		b.Manifests = append(b.Manifests, evaluator.Tree)
+
+		// Run Environment substitution
+		f := evaluator.Tree
+		//f, err := b.envsubst(evaluator.Tree)
+		//if err != nil {
+		//	return err
+		//}
+
+		b.Manifests = append(b.Manifests, f)
 	}
 
 	return nil

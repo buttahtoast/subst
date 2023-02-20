@@ -1,14 +1,12 @@
 package subst
 
 import (
-	"fmt"
 	"os"
 	"regexp"
 	"strings"
 
-	"github.com/drone/envsubst"
-	"sigs.k8s.io/kustomize/api/resource"
-	"sigs.k8s.io/yaml"
+	"github.com/buttahtoast/subst/pkg/utils"
+	"github.com/geofffranks/spruce"
 )
 
 const (
@@ -23,8 +21,8 @@ var (
 )
 
 // Read Environment Variables for substitution
-func (b *Build) readEnvironment() error {
-	envs := make(map[string]string)
+func (b *Build) readEnvironment() (err error) {
+	envs := make(map[string]interface{})
 
 	for _, e := range os.Environ() {
 		pair := strings.SplitN(e, "=", 2)
@@ -52,55 +50,53 @@ func (b *Build) readEnvironment() error {
 	}
 
 	if len(envs) > 0 {
-		b.Substitutions.Subst["env"] = make(map[string]string)
-		b.Substitutions.Subst["env"] = envs
+		b.Substitutions.Subst, err = spruce.Merge(b.Substitutions.Subst, utils.ConvertMap(envs))
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (b *Build) envsubst(res *resource.Resource) (*resource.Resource, error) {
-	if b.Substitutions.Subst["env"] != nil {
-		vars := b.Substitutions.Subst["env"].(map[string]string)
-
-		resData, err := res.AsYAML()
-		if err != nil {
-			return nil, err
-		}
-
-		// Check if resource has substition disabled
-		if substitionDisabled(res.GetAnnotations()) || substitionDisabled(res.GetLabels()) {
-			return nil, nil
-		}
-
-		if len(vars) > 0 {
-			r, _ := regexp.Compile(varsubRegex)
-
-			for v := range vars {
-				if !r.MatchString(v) {
-					return nil, fmt.Errorf("'%s' var name is invalid, must match '%s'", v, varsubRegex)
-				}
-			}
-		}
-		output, err := envsubst.Eval(string(resData), func(s string) string {
-			return vars[s]
-		})
-		if err != nil {
-			return nil, fmt.Errorf("variable substitution failed: %w", err)
-		}
-		jsonData, err := yaml.YAMLToJSON([]byte(output))
-		if err != nil {
-			return nil, fmt.Errorf("YAMLToJSON: %w", err)
-		}
-		err = res.UnmarshalJSON(jsonData)
-		if err != nil {
-			return nil, fmt.Errorf("UnmarshalJSON: %w", err)
-		}
-	}
-
-	return res, nil
-
-}
+//func (b *Build) envsubst(res map[interface{}]interface{}) (map[interface{}]interface{}, error) {
+//
+//	if b.Substitutions.Subst["env"] != nil {
+//		vars := b.Substitutions.Subst["env"].(map[string]string)
+//
+//		// Check if resource has substition disabled
+//		//if substitionDisabled(res.GetAnnotations()) || substitionDisabled(res.GetLabels()) {
+//		//	return nil, nil
+//		//}
+//
+//		if len(vars) > 0 {
+//			r, _ := regexp.Compile(varsubRegex)
+//
+//			for v := range vars {
+//				if !r.MatchString(v) {
+//					return nil, fmt.Errorf("'%s' var name is invalid, must match '%s'", v, varsubRegex)
+//				}
+//			}
+//		}
+//		output, err := envsubst.Eval(string(res), func(s string) string {
+//			return vars[s]
+//		})
+//		if err != nil {
+//			return nil, fmt.Errorf("variable substitution failed: %w", err)
+//		}
+//		jsonData, err := yaml.YAMLToJSON([]byte(output))
+//		if err != nil {
+//			return nil, fmt.Errorf("YAMLToJSON: %w", err)
+//		}
+//		err = res.UnmarshalJSON(jsonData)
+//		if err != nil {
+//			return nil, fmt.Errorf("UnmarshalJSON: %w", err)
+//		}
+//	}
+//
+//	return res, nil
+//
+//}
 
 func substitionDisabled(annotations map[string]string) bool {
 	disabledValue := "disabled"
