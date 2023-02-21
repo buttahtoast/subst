@@ -8,7 +8,6 @@ import (
 	"github.com/buttahtoast/subst/pkg/config"
 	"github.com/buttahtoast/subst/pkg/utils"
 	"github.com/geofffranks/spruce"
-	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/kustomize/api/resmap"
@@ -87,18 +86,30 @@ func (b *Build) Build() error {
 		return err
 	}
 
+	// Load Substitutions
+	substs, err := b.Substitutions.Tointerface()
+	if err != nil {
+		return err
+	}
+
+	// Flattened Environment Variables
+	flatEnv, err := b.Substitutions.Flatten()
+	if err != nil {
+		return err
+	}
+
 	// Run Spruce
 	for _, manifest := range manifests.Resources() {
 
 		// Load Single Manifest
 		m, _ := manifest.AsYAML()
-		var str map[interface{}]interface{}
-		err = yaml.Unmarshal(m, &str)
+
+		d, err := utils.ParseYAML(m)
 		if err != nil {
-			return err
+			return fmt.Errorf("UnmarshalJSON: %w", err)
 		}
 
-		substManifest, err := spruce.Merge(str, b.Substitutions.Subst)
+		substManifest, err := spruce.Merge(d, substs)
 		if err != nil {
 			return err
 		}
@@ -115,12 +126,14 @@ func (b *Build) Build() error {
 			return err
 		}
 
-		// Run Environment substitution
 		f := evaluator.Tree
-		//f, err := b.envsubst(evaluator.Tree)
-		//if err != nil {
-		//	return err
-		//}
+		// Run Environment substitution
+		if len(flatEnv) > 0 {
+			f, err = b.envsubst(flatEnv, evaluator.Tree)
+			if err != nil {
+				return err
+			}
+		}
 
 		b.Manifests = append(b.Manifests, f)
 	}

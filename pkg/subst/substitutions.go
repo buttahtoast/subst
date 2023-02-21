@@ -1,32 +1,50 @@
 package subst
 
 import (
+	"fmt"
+
+	"github.com/buttahtoast/subst/pkg/utils"
 	flat "github.com/nqd/flat"
+	"gopkg.in/yaml.v2"
 )
 
 type Substitutions struct {
 	Subst map[interface{}]interface{} `yaml:"subst"`
 }
 
-func (s *Substitutions) ToMap() map[string]interface{} {
-	out := s.mapify(s.Subst)
-	return out
-}
+//type FlattenConfig struct {
+//	LowerCase
+//	flat.Options
+//	Subst map[interface{}]interface{} `yaml:"subst"`
+//}
 
-func (s *Substitutions) mapify(input map[interface{}]interface{}) map[string]interface{} {
-	output := make(map[string]interface{})
-	for k, v := range input {
-		switch vv := v.(type) {
-		case map[interface{}]interface{}:
-			output[k.(string)] = s.mapify(vv)
-		default:
-			output[k.(string)] = vv
-		}
+func (s *Substitutions) Tointerface() (map[interface{}]interface{}, error) {
+	tmp := make(map[interface{}]interface{})
+	yml, err := yaml.Marshal(s)
+	if err != nil {
+		return nil, err
 	}
-	return output
+	err = yaml.Unmarshal(yml, tmp)
+	return tmp, err
 }
 
-func (s *Substitutions) Flatten() (map[string]interface{}, error) {
+func (s *Substitutions) ToMap() map[string]interface{} {
+	return utils.ToMap(s.Subst)
+}
+
+func (s *Substitutions) Flatten() (map[string]string, error) {
+	output := make(map[string]string)
+
 	b := s.ToMap()
-	return (flat.Flatten(b, &flat.Options{Prefix: "HRRLE", Delimiter: "_", MaxDepth: 10, Safe: false}))
+	f, err := flat.Flatten(b, &flat.Options{Prefix: "", Delimiter: "_", MaxDepth: 10, Safe: false})
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to map[string]string
+	for k, v := range f {
+		output[k] = fmt.Sprint(v)
+	}
+
+	return output, nil
 }

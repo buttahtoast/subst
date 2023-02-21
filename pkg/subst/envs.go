@@ -1,12 +1,16 @@
 package subst
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
 
 	"github.com/buttahtoast/subst/pkg/utils"
+	"github.com/drone/envsubst"
 	"github.com/geofffranks/spruce"
+	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -59,44 +63,39 @@ func (b *Build) readEnvironment() (err error) {
 	return nil
 }
 
-//func (b *Build) envsubst(res map[interface{}]interface{}) (map[interface{}]interface{}, error) {
-//
-//	if b.Substitutions.Subst["env"] != nil {
-//		vars := b.Substitutions.Subst["env"].(map[string]string)
-//
-//		// Check if resource has substition disabled
-//		//if substitionDisabled(res.GetAnnotations()) || substitionDisabled(res.GetLabels()) {
-//		//	return nil, nil
-//		//}
-//
-//		if len(vars) > 0 {
-//			r, _ := regexp.Compile(varsubRegex)
-//
-//			for v := range vars {
-//				if !r.MatchString(v) {
-//					return nil, fmt.Errorf("'%s' var name is invalid, must match '%s'", v, varsubRegex)
-//				}
-//			}
-//		}
-//		output, err := envsubst.Eval(string(res), func(s string) string {
-//			return vars[s]
-//		})
-//		if err != nil {
-//			return nil, fmt.Errorf("variable substitution failed: %w", err)
-//		}
-//		jsonData, err := yaml.YAMLToJSON([]byte(output))
-//		if err != nil {
-//			return nil, fmt.Errorf("YAMLToJSON: %w", err)
-//		}
-//		err = res.UnmarshalJSON(jsonData)
-//		if err != nil {
-//			return nil, fmt.Errorf("UnmarshalJSON: %w", err)
-//		}
-//	}
-//
-//	return res, nil
-//
-//}
+func (b *Build) envsubst(vars map[string]string, res map[interface{}]interface{}) (map[interface{}]interface{}, error) {
+	r, _ := regexp.Compile(varsubRegex)
+	for v := range vars {
+		if !r.MatchString(v) {
+			return nil, fmt.Errorf("'%s' var name is invalid, must match '%s'", v, varsubRegex)
+		}
+	}
+	i := utils.ToMap(res)
+	z, err := json.Marshal(i)
+	if err != nil {
+		return nil, err
+	}
+	// Run substitution
+	output, err := envsubst.Eval(string(z), func(s string) string {
+		return vars[s]
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("variable substitution failed: %w", err)
+	}
+
+	jsonData, err := yaml.YAMLToJSON([]byte(output))
+	if err != nil {
+		return nil, fmt.Errorf("YAMLToJSON: %w", err)
+	}
+
+	d, err := utils.ParseYAML(jsonData)
+	if err != nil {
+		return nil, fmt.Errorf("UnmarshalJSON: %w", err)
+	}
+
+	return d, nil
+}
 
 func substitionDisabled(annotations map[string]string) bool {
 	disabledValue := "disabled"

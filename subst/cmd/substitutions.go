@@ -56,7 +56,6 @@ func substitutions(cmd *cobra.Command, args []string) error {
 			}
 
 			fmt.Println("\nFlattened (Environment Variable Style): \n\n" + string(e))
-
 		}
 	}
 

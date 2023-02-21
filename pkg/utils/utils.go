@@ -18,6 +18,26 @@ func ConvertPath(path string) string {
 	return path
 }
 
+// convert map[interface{}]interface{} recursive to map[string]string
+func ToMap(i map[interface{}]interface{}) map[string]interface{} {
+	out := mapify(i)
+	return out
+}
+
+// convert map[string]interface{} to map[string]string (Recursion)
+func mapify(input map[interface{}]interface{}) map[string]interface{} {
+	output := make(map[string]interface{})
+	for k, v := range input {
+		switch vv := v.(type) {
+		case map[interface{}]interface{}:
+			output[k.(string)] = mapify(vv)
+		default:
+			output[k.(string)] = vv
+		}
+	}
+	return output
+}
+
 // Convert converts a map[string]interface{} to a map[interface{}]interface{}.
 func ConvertMap(inputMap map[string]interface{}) map[interface{}]interface{} {
 	var convertedMap = make(map[interface{}]interface{})
