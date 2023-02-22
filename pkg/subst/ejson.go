@@ -48,7 +48,7 @@ func (b *Build) loadEjsonKeys() error {
 	}
 
 	if len(b.keys) == 0 {
-		logrus.Debug("No EJSON keys laoded")
+		logrus.Debug("No EJSON keys loaded")
 	} else {
 		logrus.Debug("Found EJSON Keys: ", b.keys)
 	}

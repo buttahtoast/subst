@@ -63,7 +63,7 @@ func LoadConfiguration(cfgFile string, cmd *cobra.Command) (*Configuration, erro
 		}
 	}
 
-	logrus.Debug(fmt.Printf("Using configuration file: %s", cfgFile))
+	logrus.Debugf("Using configuration file: %s", v.ConfigFileUsed())
 
 	if err := v.ReadInConfig(); err != nil {
 		if cfgFile != "" {

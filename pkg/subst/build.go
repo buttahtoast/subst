@@ -8,6 +8,7 @@ import (
 	"github.com/buttahtoast/subst/pkg/config"
 	"github.com/buttahtoast/subst/pkg/utils"
 	"github.com/geofffranks/spruce"
+	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/kustomize/api/resmap"
@@ -68,12 +69,14 @@ func New(config config.Configuration) (build *Build, err error) {
 	if err != nil {
 		return nil, err
 	}
+	logrus.Debug("Loaded Environment Variables")
 
 	// Read Substition Files
 	err = result.walkpaths(result.substFiles)
 	if err != nil {
 		return nil, err
 	}
+	logrus.Debug("Loaded Substitutions: ", result.Substitutions.Subst)
 
 	return result, err
 }
@@ -89,16 +92,17 @@ func (b *Build) Build() error {
 	// Load Substitutions
 	substs, err := b.Substitutions.Tointerface()
 	if err != nil {
-		return err
+		return fmt.Errorf("could not convert substitutions: %w", err)
 	}
 
 	// Flattened Environment Variables
 	flatEnv, err := b.Substitutions.Flatten()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to flatten environment: %w", err)
 	}
 
-	// Run Spruce
+	// Run Build
+	logrus.Debug("substitute manifests")
 	for _, manifest := range manifests.Resources() {
 
 		// Load Single Manifest
@@ -111,7 +115,7 @@ func (b *Build) Build() error {
 
 		substManifest, err := spruce.Merge(d, substs)
 		if err != nil {
-			return err
+			return fmt.Errorf("could not merge manifest with subtitutions: %s", err)
 		}
 
 		// Evaluate with Spruce
@@ -123,7 +127,7 @@ func (b *Build) Build() error {
 		// Evaluate Tree and prune subst
 		err = evaluator.Run([]string{"subst"}, nil)
 		if err != nil {
-			return err
+			return fmt.Errorf("spruce evaluation failed: %s", err)
 		}
 
 		f := evaluator.Tree
@@ -131,12 +135,13 @@ func (b *Build) Build() error {
 		if len(flatEnv) > 0 {
 			f, err = b.envsubst(flatEnv, evaluator.Tree)
 			if err != nil {
-				return err
+				return fmt.Errorf("environment substitution failed: %s", err)
 			}
 		}
 
 		b.Manifests = append(b.Manifests, f)
 	}
+	logrus.Debugf("Build finished")
 
 	return nil
 }
@@ -147,6 +152,7 @@ func (b *Build) substFiles(path string, info fs.FileInfo, err error) error {
 	ext := filepath.Ext(path)
 	if ext == b.cfg.VarFilePattern || ext == b.cfg.EjsonFilePattern {
 		var c map[interface{}]interface{}
+		logrus.Debug("Loading file: ", path, "")
 		file, err := utils.NewFile(path)
 		if err != nil {
 			return err
@@ -154,11 +160,13 @@ func (b *Build) substFiles(path string, info fs.FileInfo, err error) error {
 
 		switch ext {
 		case b.cfg.VarFilePattern:
+			logrus.Debug("Identified as vars file: ", path, "")
 			c, err = file.SPRUCE()
 			if err != nil {
 				return fmt.Errorf("Encountered error %s: %s", path, err)
 			}
 		case b.cfg.EjsonFilePattern:
+			logrus.Debug("Identified as ejson file: ", path, "")
 			c, err = b.decrypt(*file)
 			if err != nil {
 				return fmt.Errorf("failed to read %s: %s", path, err)
@@ -168,7 +176,7 @@ func (b *Build) substFiles(path string, info fs.FileInfo, err error) error {
 		// Merge Substitutions
 		b.Substitutions.Subst, err = spruce.Merge(b.Substitutions.Subst, c)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to merge %s: %s", path, err)
 		}
 
 	}

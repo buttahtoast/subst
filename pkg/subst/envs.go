@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -71,9 +72,10 @@ func (b *Build) envsubst(vars map[string]string, res map[interface{}]interface{}
 		}
 	}
 	i := utils.ToMap(res)
+	fmt.Println(reflect.TypeOf(i))
 	z, err := json.Marshal(i)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error converting manifest: %w", res)
 	}
 	// Run substitution
 	output, err := envsubst.Eval(string(z), func(s string) string {
