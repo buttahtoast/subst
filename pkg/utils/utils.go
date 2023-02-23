@@ -92,7 +92,7 @@ func PrintYAML(data map[interface{}]interface{}) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("---\n%s\n", string(y))
+	fmt.Printf("---\n%s", string(y))
 	return err
 }
 

@@ -1,16 +1,15 @@
 package subst
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"reflect"
 	"regexp"
 	"strings"
 
 	"github.com/buttahtoast/subst/pkg/utils"
 	"github.com/drone/envsubst"
 	"github.com/geofffranks/spruce"
+	jsoniter "github.com/json-iterator/go"
 	"sigs.k8s.io/yaml"
 )
 
@@ -71,11 +70,11 @@ func (b *Build) envsubst(vars map[string]string, res map[interface{}]interface{}
 			return nil, fmt.Errorf("'%s' var name is invalid, must match '%s'", v, varsubRegex)
 		}
 	}
-	i := utils.ToMap(res)
-	fmt.Println(reflect.TypeOf(i))
-	z, err := json.Marshal(i)
+
+	// jsoniter.Marshal() is used instead of json.Marshal() because it supports nested map types
+	z, err := jsoniter.Marshal(res)
 	if err != nil {
-		return nil, fmt.Errorf("error converting manifest: %w", res)
+		return nil, fmt.Errorf("error converting manifest: %w", err)
 	}
 	// Run substitution
 	output, err := envsubst.Eval(string(z), func(s string) string {

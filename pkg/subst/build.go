@@ -141,7 +141,7 @@ func (b *Build) Build() error {
 
 		b.Manifests = append(b.Manifests, f)
 	}
-	logrus.Debugf("Build finished")
+	logrus.Infof("build finished")
 
 	return nil
 }
