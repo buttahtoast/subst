@@ -180,13 +180,13 @@ func (b *Build) substFiles(path string, info fs.FileInfo, err error) error {
 
 		switch ext {
 		case b.cfg.VarFilePattern:
-			logrus.Debug("Identified as vars file: ", path, "")
+			logrus.Debug("vars file: ", path, "")
 			c, err = file.SPRUCE()
 			if err != nil {
 				return fmt.Errorf("Encountered error %s: %s", path, err)
 			}
 		case b.cfg.EjsonFilePattern:
-			logrus.Debug("Identified as ejson file: ", path, "")
+			logrus.Debug("ejson file: ", path, "")
 			c, err = b.decrypt(*file)
 			if err != nil {
 				return fmt.Errorf("failed to read %s: %s", path, err)
