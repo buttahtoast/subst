@@ -57,7 +57,7 @@ func (s *Substitutions) Flatten() (map[string]string, error) {
 	output := make(map[string]string)
 
 	b := s.ToMap()
-	f, err := flat.Flatten(b, &flat.Options{Prefix: "", Delimiter: "_", MaxDepth: 10, Safe: false})
+	f, err := flat.Flatten(b, &flat.Options{Prefix: "", Delimiter: "_", MaxDepth: 50, Safe: false})
 	if err != nil {
 		return nil, err
 	}
