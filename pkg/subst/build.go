@@ -146,6 +146,26 @@ func (b *Build) Build() error {
 	return nil
 }
 
+// builds the substitutions interface
+func (b *Build) buildSubstitutions() (err error) {
+
+	// Read Substition Files
+	err = b.walkpaths(b.substFiles)
+	if err != nil {
+		return err
+	}
+
+	// Final attempt to evaluate
+	tree, err := utils.SpruceEval(b.Substitutions.Subst, []string{})
+	if err != nil {
+		return err
+	}
+	b.Substitutions.Subst = tree.Tree
+	logrus.Debug("Loaded Substitutions: ", b.Substitutions.Subst)
+
+	return nil
+}
+
 func (b *Build) substFiles(path string, info fs.FileInfo, err error) error {
 
 	// Load File
@@ -174,7 +194,7 @@ func (b *Build) substFiles(path string, info fs.FileInfo, err error) error {
 		}
 
 		// Merge Substitutions
-		b.Substitutions.Subst, err = spruce.Merge(b.Substitutions.Subst, c)
+		err = b.Substitutions.Add(c)
 		if err != nil {
 			return fmt.Errorf("failed to merge %s: %s", path, err)
 		}

@@ -87,7 +87,7 @@ func (b *Build) envsubst(vars map[string]string, res map[interface{}]interface{}
 
 	jsonData, err := yaml.YAMLToJSON([]byte(output))
 	if err != nil {
-		return nil, fmt.Errorf("YAMLToJSON: %w", err)
+		return nil, fmt.Errorf("YAMLToJSON: %w %s", err, output)
 	}
 
 	d, err := utils.ParseYAML(jsonData)

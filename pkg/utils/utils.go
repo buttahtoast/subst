@@ -13,7 +13,7 @@ import (
 
 const (
 	VarsubRegex       = "^[_[:alpha:]][_[:alpha:][:digit:]]*$"
-	SpecialCharsRegex = "[$&+,:;=?@#|'<>.^*()%!-]"
+	SpecialCharsRegex = "[$&+,:;=?@#|'<>.^*()%!-/]"
 )
 
 func ConvertPath(path string) string {

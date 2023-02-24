@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/buttahtoast/subst/pkg/utils"
+	"github.com/geofffranks/spruce"
 	flat "github.com/nqd/flat"
 	"gopkg.in/yaml.v2"
 )
@@ -18,6 +19,25 @@ type Substitutions struct {
 //	flat.Options
 //	Subst map[interface{}]interface{} `yaml:"subst"`
 //}
+
+func (s *Substitutions) Add(data map[interface{}]interface{}) (err error) {
+	tree, err := utils.SpruceOptimisticEval(data)
+	if err != nil {
+		return fmt.Errorf("failed to build subtitutions: %s", err)
+	}
+
+	substs, err := s.Tointerface()
+	if err != nil {
+		return fmt.Errorf("failed to build subtitutions %s", err)
+	}
+
+	s.Subst, err = spruce.Merge(substs["subst"].(map[interface{}]interface{}), tree)
+	if err != nil {
+		return fmt.Errorf("failed to build subtitutions %s", err)
+	}
+
+	return err
+}
 
 func (s *Substitutions) Tointerface() (map[interface{}]interface{}, error) {
 	tmp := make(map[interface{}]interface{})
@@ -51,7 +71,7 @@ func (s *Substitutions) Flatten() (map[string]string, error) {
 		if r.MatchString(key) {
 			key = r.ReplaceAllString(key, "_")
 		}
-		output[key] = fmt.Sprintf("%v", v)
+		output[key] = fmt.Sprint(v)
 	}
 
 	return output, nil
