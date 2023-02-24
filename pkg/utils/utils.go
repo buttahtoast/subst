@@ -11,6 +11,11 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const (
+	VarsubRegex       = "^[_[:alpha:]][_[:alpha:][:digit:]]*$"
+	SpecialCharsRegex = "[$&+,:;=?@#|'<>.^*()%!-]"
+)
+
 func ConvertPath(path string) string {
 	if path[len(path)-1:] != "/" {
 		path = fmt.Sprintf("%v/", path)

@@ -2,6 +2,7 @@ package subst
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/buttahtoast/subst/pkg/utils"
 	flat "github.com/nqd/flat"
@@ -43,7 +44,14 @@ func (s *Substitutions) Flatten() (map[string]string, error) {
 
 	// Convert to map[string]string
 	for k, v := range f {
-		output[k] = fmt.Sprint(v)
+		key := k
+
+		// Convert unallowed characters to underscores
+		r := regexp.MustCompile(utils.SpecialCharsRegex)
+		if r.MatchString(key) {
+			key = r.ReplaceAllString(key, "_")
+		}
+		output[key] = fmt.Sprintf("%v", v)
 	}
 
 	return output, nil
