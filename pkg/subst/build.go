@@ -5,9 +5,9 @@ import (
 	"io/fs"
 	"path/filepath"
 
+	"github.com/buttahtoast/subst/internal/utils"
+	"github.com/buttahtoast/subst/internal/wrapper"
 	"github.com/buttahtoast/subst/pkg/config"
-	"github.com/buttahtoast/subst/pkg/utils"
-	"github.com/geofffranks/spruce"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -18,7 +18,7 @@ type Build struct {
 	root          string
 	Paths         []string
 	Manifests     []map[interface{}]interface{}
-	Substitutions Substitutions
+	Substitutions *Substitutions
 	keys          []string
 	cfg           config.Configuration
 	// kubeClient a client that knows how to consume kubernetes API.
@@ -26,59 +26,61 @@ type Build struct {
 }
 
 func New(config config.Configuration) (build *Build, err error) {
-	result := &Build{
+	init := &Build{
 		root: config.RootDirectory,
 		cfg:  config,
 		keys: config.EjsonKey,
 	}
 
 	// Init Substitutions
-	result.Substitutions = Substitutions{
-		Subst: make(map[interface{}]interface{}),
+	s, err := NewSubstitutions()
+	if err != nil {
+		return nil, err
 	}
+	init.Substitutions = s
 
 	// Load Kubernetes Client
 	var host string
 	if config.KubeAPI != "" {
 		host = config.KubeAPI
 	}
-	cfg, err := clientcmd.BuildConfigFromFlags(host, result.cfg.Kubeconfig)
+	cfg, err := clientcmd.BuildConfigFromFlags(host, init.cfg.Kubeconfig)
 	if err == nil {
-		result.kubeClient, err = kubernetes.NewForConfig(cfg)
+		init.kubeClient, err = kubernetes.NewForConfig(cfg)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// Gather all releveant paths
-	err = result.kustomizePaths(result.root)
+	err = init.kustomizePaths(init.root)
 	if err != nil {
 		return nil, err
 	}
 
 	// Load Decryption Keys
-	if !result.cfg.SkipDecrypt {
-		err = result.loadEjsonKeys()
+	if !init.cfg.SkipDecrypt {
+		err = init.loadEjsonKeys()
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// Gather Environment
-	err = result.readEnvironment()
+	err = init.readEnvironment()
 	if err != nil {
 		return nil, err
 	}
 	logrus.Debug("Loaded Environment Variables")
 
 	// Read Substition Files
-	err = result.walkpaths(result.substFiles)
+	err = init.walkpaths(init.substFiles)
 	if err != nil {
 		return nil, err
 	}
-	logrus.Debug("Loaded Substitutions: ", result.Substitutions.Subst)
+	logrus.Debug("Loaded Substitutions: ", init.Substitutions.Subst)
 
-	return result, err
+	return init, err
 }
 
 func (b *Build) Build() error {
@@ -87,12 +89,6 @@ func (b *Build) Build() error {
 	manifests, err := b.kustomizeBuild()
 	if err != nil {
 		return err
-	}
-
-	// Load Substitutions
-	substs, err := b.Substitutions.Tointerface()
-	if err != nil {
-		return fmt.Errorf("could not convert substitutions: %w", err)
 	}
 
 	// Flattened Environment Variables
@@ -113,27 +109,14 @@ func (b *Build) Build() error {
 			return fmt.Errorf("UnmarshalJSON: %w", err)
 		}
 
-		substManifest, err := spruce.Merge(d, substs)
-		if err != nil {
-			return fmt.Errorf("could not merge manifest with subtitutions: %s", err)
-		}
-
-		// Evaluate with Spruce
-		evaluator := &spruce.Evaluator{
-			Tree:     substManifest,
-			SkipEval: b.cfg.SkipEvaluation,
-		}
-
-		// Evaluate Tree and prune subst
-		err = evaluator.Run([]string{"subst"}, nil)
+		f, err := b.Substitutions.Eval(d, nil)
 		if err != nil {
 			return fmt.Errorf("spruce evaluation failed: %s", err)
 		}
 
-		f := evaluator.Tree
 		// Run Environment substitution
 		if len(flatEnv) > 0 {
-			f, err = b.envsubst(flatEnv, evaluator.Tree)
+			f, err = b.envsubst(flatEnv, f)
 			if err != nil {
 				return fmt.Errorf("environment substitution failed: %s", err)
 			}
@@ -156,7 +139,7 @@ func (b *Build) buildSubstitutions() (err error) {
 	}
 
 	// Final attempt to evaluate
-	tree, err := utils.SpruceEval(b.Substitutions.Subst, []string{})
+	tree, err := wrapper.SpruceEval(b.Substitutions.Subst, []string{})
 	if err != nil {
 		return err
 	}

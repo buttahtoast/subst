@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/Shopify/ejson"
-	"github.com/buttahtoast/subst/pkg/utils"
+	"github.com/buttahtoast/subst/internal/utils"
 	"github.com/go-logr/logr"
 	"github.com/sirupsen/logrus"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"

@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/buttahtoast/subst/internal/utils"
 	"github.com/buttahtoast/subst/pkg/config"
 	"github.com/buttahtoast/subst/pkg/subst"
-	"github.com/buttahtoast/subst/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"

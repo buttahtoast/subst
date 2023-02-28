@@ -3,24 +3,19 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/geofffranks/simpleyaml"
 	"github.com/starkandwayne/goutils/ansi"
 	"gopkg.in/yaml.v2"
 )
 
-const (
-	VarsubRegex       = "^[_[:alpha:]][_[:alpha:][:digit:]]*$"
-	SpecialCharsRegex = "[$&+,:;=?@#|'<>.^*()%!-/]"
-)
-
-func ConvertPath(path string) string {
-	if path[len(path)-1:] != "/" {
-		path = fmt.Sprintf("%v/", path)
+// Convert converts a map[string]interface{} to a map[interface{}]interface{}.
+func ToInterface(inputMap map[string]interface{}) map[interface{}]interface{} {
+	var convertedMap = make(map[interface{}]interface{})
+	for key, value := range inputMap {
+		convertedMap[key] = value
 	}
-	return path
+	return convertedMap
 }
 
 // convert map[interface{}]interface{} recursive to map[string]string
@@ -43,13 +38,11 @@ func mapify(input map[interface{}]interface{}) map[string]interface{} {
 	return output
 }
 
-// Convert converts a map[string]interface{} to a map[interface{}]interface{}.
-func ConvertMap(inputMap map[string]interface{}) map[interface{}]interface{} {
-	var convertedMap = make(map[interface{}]interface{})
-	for key, value := range inputMap {
-		convertedMap[key] = value
+func ConvertPath(path string) string {
+	if path[len(path)-1:] != "/" {
+		path = fmt.Sprintf("%v/", path)
 	}
-	return convertedMap
+	return path
 }
 
 // Convert YAML/JSON data to a map[interface{}]interface{}.
@@ -76,22 +69,7 @@ func ParseYAML(data []byte) (map[interface{}]interface{}, error) {
 	return doc, nil
 }
 
-// MkdirTempAbs creates a tmp dir and returns the absolute path to the dir.
-// This is required since certain OSes like MacOS create temporary files in
-// e.g. `/private/var`, to which `/var` is a symlink.
-func MkdirTempAbs(dir, pattern string) (string, error) {
-	tmpDir, err := os.MkdirTemp(dir, pattern)
-	if err != nil {
-		return "", err
-	}
-	tmpDir, err = filepath.EvalSymlinks(tmpDir)
-	if err != nil {
-		return "", fmt.Errorf("error evaluating symlink: %w", err)
-	}
-	return tmpDir, nil
-}
-
-/* create a golang function which prints map[interface{}]interface{} as yaml */
+// create a golang function which prints map[interface{}]interface{} as yaml
 func PrintYAML(data map[interface{}]interface{}) error {
 	y, err := yaml.Marshal(data)
 	if err != nil {
@@ -101,7 +79,7 @@ func PrintYAML(data map[interface{}]interface{}) error {
 	return err
 }
 
-/* create a golang function which prints map[interface{}]interface{} as json */
+// create a golang function which prints map[interface{}]interface{}
 func PrintJSON(data map[interface{}]interface{}) error {
 	j, err := json.Marshal(data)
 	if err != nil {

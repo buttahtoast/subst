@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/buttahtoast/subst/pkg/utils"
+	"github.com/buttahtoast/subst/internal/utils"
 	"github.com/drone/envsubst"
 	"github.com/geofffranks/spruce"
 	jsoniter "github.com/json-iterator/go"
@@ -54,7 +54,7 @@ func (b *Build) readEnvironment() (err error) {
 	}
 
 	if len(envs) > 0 {
-		b.Substitutions.Subst, err = spruce.Merge(b.Substitutions.Subst, utils.ConvertMap(envs))
+		b.Substitutions.Subst, err = spruce.Merge(b.Substitutions.Subst, utils.ToInterface(envs))
 		if err != nil {
 			return err
 		}
