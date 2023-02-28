@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
 
 	"github.com/spf13/cobra"
@@ -14,17 +15,21 @@ import (
 )
 
 type Configuration struct {
+	AllowedEnvRegex      string        `mapstructure:"env-regex"`
 	RootDirectory        string        `mapstructure:"root-dir"`
-	ExtraDirectories     []string      `mapstructure:"extra-dirs"`
 	EjsonFilePattern     string        `mapstructure:"ejson-pattern"`
 	EjsonSecret          string        `mapstructure:"ejson-secret"`
+	SopsSecret           string        `mapstructure:"sops-secret"`
 	EjsonSecretNamespace string        `mapstructure:"ejson-namespace"`
 	EjsonKey             []string      `mapstructure:"ejson-key"`
-	SkipDecryption       bool          `mapstructure:"skip-decryption"`
+	SkipDecrypt          bool          `mapstructure:"skip-decrypt"`
+	MustDecrypt          bool          `mapstructure:"must-decrypt"`
 	SkipEvaluation       bool          `mapstructure:"skip-eval"`
 	VarFilePattern       string        `mapstructure:"vars-pattern"`
 	Debug                bool          `mapstructure:"debug"`
 	KubectlTimeout       time.Duration `mapstructure:"kubectl-timeout"`
+	Kubeconfig           string        `mapstructure:"kubeconfig"`
+	KubeAPI              string        `mapstructure:"kube-api"`
 }
 
 var (
@@ -58,6 +63,8 @@ func LoadConfiguration(cfgFile string, cmd *cobra.Command) (*Configuration, erro
 		}
 	}
 
+	logrus.Debugf("Using configuration file: %s", v.ConfigFileUsed())
+
 	if err := v.ReadInConfig(); err != nil {
 		if cfgFile != "" {
 			// Only error out for specified config file. Ignore for default locations.
@@ -77,6 +84,8 @@ func LoadConfiguration(cfgFile string, cmd *cobra.Command) (*Configuration, erro
 	} else {
 		cfg.RootDirectory = rootAbs
 	}
+
+	logrus.Debugf("Configuration: %+v\n", cfg)
 
 	return cfg, nil
 

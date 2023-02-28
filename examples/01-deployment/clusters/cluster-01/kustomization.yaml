@@ -1,6 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../common/env/dev/
-  - ../common/apps/
-# - (( concat "../common/env/" $.Subs.Env "/" ))
+  - ../../common/dns/
+  - ../../location/ch-east/
+patches:
+- path: ../../common/patches/patch.yaml
+  target:
+    kind: Deployment

@@ -2,14 +2,14 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/buttahtoast/subst/internal/utils"
 	"github.com/buttahtoast/subst/pkg/config"
-	"github.com/buttahtoast/subst/pkg/tool"
+	"github.com/buttahtoast/subst/pkg/subst"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
-	"gopkg.in/yaml.v2"
 )
 
 func newRenderCmd() *cobra.Command {
@@ -29,13 +29,23 @@ func newRenderCmd() *cobra.Command {
 }
 
 func addRenderFlags(flags *flag.FlagSet) {
+	if flags.Lookup("kubeconfig") == nil {
+		flags.String("kubeconfig", "", "Path to a kubeconfig")
+	}
+	if flags.Lookup("kube-api") == nil {
+		flags.String("kube-api", "", "Kubernetes API Url")
+	}
 	flags.String("ejson-secret", "", heredoc.Doc(`
 	        Specify EJSON Secret name (each key within the secret will be used as a decryption key)`))
 	flags.String("ejson-namespace", "", heredoc.Doc(`
 	        Specify EJSON Secret namespace`))
+	flags.String("env-regex", "^ARGOCD_ENV_.*$", heredoc.Doc(`
+	        Only expose environment variables that match the given regex`))
 	flags.StringSlice("ejson-key", []string{}, heredoc.Doc(`
 			Specify EJSON Private key used for decryption.
 			May be specified multiple times or separate values with commas`))
+	flags.Bool("must-decrypt", false, heredoc.Doc(`
+			Fail if not all ejson files can be decrypted`))
 	flags.Bool("skip-decrypt", false, heredoc.Doc(`
 			Disable decryption of EJSON files`))
 	flags.Bool("skip-eval", false, heredoc.Doc(`
@@ -48,20 +58,23 @@ func render(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed loading configuration: %w", err)
 	}
-	m, err := tool.Gather(*configuration)
+	m, err := subst.New(*configuration)
 	if err != nil {
-		fmt.Println(err)
+		logrus.Error(err)
+		return err
 	}
-
-	for _, f := range m {
-		y, err := yaml.Marshal(f)
+	if m != nil {
+		err = m.Build()
 		if err != nil {
-			log.Fatalf("error: %v", err)
+			logrus.Error(err)
+			return err
 		}
-		fmt.Printf("---\n%s\n", string(y))
+		if m.Manifests != nil {
+			for _, f := range m.Manifests {
+				utils.PrintYAML(f)
+			}
+		}
 	}
-	//return yaml.Marshal(f.data)
 
 	return nil
-
 }
