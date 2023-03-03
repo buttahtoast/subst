@@ -71,6 +71,16 @@ func (b *Build) envsubst(vars map[string]string, res map[interface{}]interface{}
 		}
 	}
 
+	if res["metadata"] != nil {
+		metadata := res["metadata"].(map[interface{}]interface{})
+		if metadata["annotations"] != nil {
+			annotations := metadata["annotations"].(map[interface{}]interface{})
+			if substitionDisabled(annotations) {
+				return res, nil
+			}
+		}
+	}
+
 	// jsoniter.Marshal() is used instead of json.Marshal() because it supports nested map types
 	z, err := jsoniter.Marshal(res)
 	if err != nil {
@@ -98,7 +108,7 @@ func (b *Build) envsubst(vars map[string]string, res map[interface{}]interface{}
 	return d, nil
 }
 
-func substitionDisabled(annotations map[string]string) bool {
+func substitionDisabled(annotations map[interface{}]interface{}) bool {
 	disabledValue := "disabled"
 	for _, key := range substituteAnnotationKeys {
 		if val, _ := annotations[key]; val == disabledValue {

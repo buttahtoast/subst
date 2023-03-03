@@ -15,7 +15,7 @@ func SpruceEval(data map[interface{}]interface{}, prune []string) (eval *spruce.
 
 	err = evaluator.Run(prune, nil)
 	if err != nil {
-		return nil, err
+		return evaluator, err
 	}
 
 	return evaluator, nil

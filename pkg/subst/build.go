@@ -111,14 +111,14 @@ func (b *Build) Build() error {
 
 		f, err := b.Substitutions.Eval(d, nil)
 		if err != nil {
-			return fmt.Errorf("spruce evaluation failed: %s", err)
+			return fmt.Errorf("spruce evaluation failed %s/%s: %s", manifest.GetNamespace(), manifest.GetName(), err)
 		}
 
 		// Run Environment substitution
 		if len(flatEnv) > 0 {
 			f, err = b.envsubst(flatEnv, f)
 			if err != nil {
-				return fmt.Errorf("environment substitution failed: %s", err)
+				return fmt.Errorf("envsubst failed %s/%s: %s", manifest.GetNamespace(), manifest.GetName(), err)
 			}
 		}
 
