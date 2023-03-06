@@ -8,7 +8,6 @@ import (
 
 	"github.com/buttahtoast/subst/internal/utils"
 	"github.com/drone/envsubst"
-	"github.com/geofffranks/spruce"
 	jsoniter "github.com/json-iterator/go"
 	"sigs.k8s.io/yaml"
 )
@@ -24,9 +23,8 @@ var (
 	substituteAnnotationKeys = []string{"kustomize.toolkit.fluxcd.io/substitute"}
 )
 
-// Read Environment Variables for substitution
-func (b *Build) readEnvironment() (err error) {
-	envs := make(map[string]interface{})
+func GetVariables(regex string) (envs map[string]interface{}, err error) {
+	envs = make(map[string]interface{})
 
 	for _, e := range os.Environ() {
 		pair := strings.SplitN(e, "=", 2)
@@ -35,10 +33,10 @@ func (b *Build) readEnvironment() (err error) {
 
 		if value != "" {
 			// Verify if regexp matches (Skip no matches)
-			if b.cfg.AllowedEnvRegex != "" {
-				r, err := regexp.Compile(b.cfg.AllowedEnvRegex)
+			if regex != "" {
+				r, err := regexp.Compile(regex)
 				if err != nil {
-					return err
+					return nil, err
 				}
 				if !r.MatchString(key) {
 					continue
@@ -52,18 +50,10 @@ func (b *Build) readEnvironment() (err error) {
 			envs[key] = value
 		}
 	}
-
-	if len(envs) > 0 {
-		b.Substitutions.Subst, err = spruce.Merge(b.Substitutions.Subst, utils.ToInterface(envs))
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return envs, nil
 }
 
-func (b *Build) envsubst(vars map[string]string, res map[interface{}]interface{}) (map[interface{}]interface{}, error) {
+func Envsubst(vars map[string]string, res map[interface{}]interface{}) (map[interface{}]interface{}, error) {
 	r, _ := regexp.Compile(varsubRegex)
 	for v := range vars {
 		if !r.MatchString(v) {

@@ -2,12 +2,12 @@ package subst
 
 import (
 	"fmt"
-	"io/fs"
-	"path/filepath"
 
+	"github.com/buttahtoast/subst/internal/kustomize"
 	"github.com/buttahtoast/subst/internal/utils"
 	"github.com/buttahtoast/subst/internal/wrapper"
 	"github.com/buttahtoast/subst/pkg/config"
+	"github.com/buttahtoast/subst/pkg/decryptor"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -15,47 +15,29 @@ import (
 )
 
 type Build struct {
-	root          string
-	Paths         []string
 	Manifests     []map[interface{}]interface{}
+	kustomization *kustomize.Kustomize
 	Substitutions *Substitutions
-	keys          []string
 	cfg           config.Configuration
-	// kubeClient a client that knows how to consume kubernetes API.
-	kubeClient *kubernetes.Clientset
+	kubeClient    *kubernetes.Clientset
 }
 
 func New(config config.Configuration) (build *Build, err error) {
-	init := &Build{
-		root: config.RootDirectory,
-		cfg:  config,
-		keys: config.EjsonKey,
-	}
 
-	// Init Substitutions
 	s, err := NewSubstitutions()
 	if err != nil {
 		return nil, err
 	}
-	init.Substitutions = s
 
-	// Load Kubernetes Client
-	var host string
-	if config.KubeAPI != "" {
-		host = config.KubeAPI
-	}
-	cfg, err := clientcmd.BuildConfigFromFlags(host, init.cfg.Kubeconfig)
-	if err == nil {
-		init.kubeClient, err = kubernetes.NewForConfig(cfg)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Gather all releveant paths
-	err = init.kustomizePaths(init.root)
+	k, err := kustomize.NewKustomize(config.RootDirectory)
 	if err != nil {
 		return nil, err
+	}
+
+	init := &Build{
+		cfg:           config,
+		Substitutions: s,
+		kustomization: k,
 	}
 
 	// Load Decryption Keys
@@ -66,19 +48,7 @@ func New(config config.Configuration) (build *Build, err error) {
 		}
 	}
 
-	// Gather Environment
-	err = init.readEnvironment()
-	if err != nil {
-		return nil, err
-	}
-	logrus.Debug("Loaded Environment Variables")
-
-	// Read Substition Files
-	err = init.walkpaths(init.substFiles)
-	if err != nil {
-		return nil, err
-	}
-	logrus.Debug("Loaded Substitutions: ", init.Substitutions.Subst)
+	init
 
 	return init, err
 }
@@ -129,11 +99,42 @@ func (b *Build) Build() error {
 	return nil
 }
 
+func (b *Build) initializeKubeconfig() (err error) {
+	var host string
+	if b.cfg.KubeAPI != "" {
+		host = b.cfg.KubeAPI
+	}
+	cfg, err := clientcmd.BuildConfigFromFlags(host, b.cfg.Kubeconfig)
+	if err == nil {
+		b.kubeClient, err = kubernetes.NewForConfig(cfg)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// initialize decryption
+func (b *Build) initializeDecryptors() (d []decryptor.Decryptor, err error) {
+
+	e := decryptor.NewEJSONDecryptor()
+
+	if err != nil {
+		return nil, err
+	}
+
+	if b.cfg.SkipDecrypt {
+		e.KeysFromSecret()
+
+	}
+
+}
+
 // builds the substitutions interface
-func (b *Build) buildSubstitutions() (err error) {
+func (b *Build) loadSubstitutions() (err error) {
 
 	// Read Substition Files
-	err = b.walkpaths(b.substFiles)
+	err = b.kustomization.Walk(b.Substitutions.Walk)
 	if err != nil {
 		return err
 	}
@@ -146,53 +147,5 @@ func (b *Build) buildSubstitutions() (err error) {
 	b.Substitutions.Subst = tree.Tree
 	logrus.Debug("Loaded Substitutions: ", b.Substitutions.Subst)
 
-	return nil
-}
-
-func (b *Build) substFiles(path string, info fs.FileInfo, err error) error {
-
-	// Load File
-	ext := filepath.Ext(path)
-	if ext == b.cfg.VarFilePattern || ext == b.cfg.EjsonFilePattern {
-		var c map[interface{}]interface{}
-		logrus.Debug("Loading file: ", path, "")
-		file, err := utils.NewFile(path)
-		if err != nil {
-			return err
-		}
-
-		switch ext {
-		case b.cfg.VarFilePattern:
-			logrus.Debug("vars file: ", path, "")
-			c, err = file.SPRUCE()
-			if err != nil {
-				return fmt.Errorf("Encountered error %s: %s", path, err)
-			}
-		case b.cfg.EjsonFilePattern:
-			logrus.Debug("ejson file: ", path, "")
-			c, err = b.decrypt(*file)
-			if err != nil {
-				return fmt.Errorf("failed to read %s: %s", path, err)
-			}
-		}
-
-		// Merge Substitutions
-		err = b.Substitutions.Add(c)
-		if err != nil {
-			return fmt.Errorf("failed to merge %s: %s", path, err)
-		}
-
-	}
-	return err
-}
-
-// Generic funtion to walk all paths and run a function on each file
-func (b *Build) walkpaths(fn filepath.WalkFunc) error {
-	for path := range b.Paths {
-		err := filepath.Walk(b.Paths[path], fn)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }

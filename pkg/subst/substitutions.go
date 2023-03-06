@@ -2,13 +2,17 @@ package subst
 
 import (
 	"fmt"
+	"io/fs"
+	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/buttahtoast/subst/internal/utils"
 	"github.com/buttahtoast/subst/internal/wrapper"
+	"github.com/buttahtoast/subst/pkg/decryptor"
 	"github.com/geofffranks/spruce"
 	flat "github.com/nqd/flat"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
@@ -17,16 +21,18 @@ const (
 )
 
 type Substitutions struct {
-	Subst  map[interface{}]interface{} `yaml:"subst"`
-	Config SubstitutionsConfig         `yaml:"config"`
+	Subst      map[interface{}]interface{} `yaml:"subst"`
+	Config     SubstitutionsConfig         `yaml:"config"`
+	decryptors []decryptor.Decryptor
 }
 
 type SubstitutionsConfig struct {
 	SubstKey         string `yaml:"subst_key"`
+	SubstFilePattern string `yaml:"subst_file_pattern"`
 	FlattenLowerCase bool   `yaml:"lowercase"`
 }
 
-func NewSubstitutions() (s *Substitutions, err error) {
+func NewSubstitutions(decs ...[]decryptor.Decryptor) (s *Substitutions, err error) {
 	cfg := SubstitutionsConfig{
 		SubstKey:         "subst",
 		FlattenLowerCase: false,
@@ -37,11 +43,21 @@ func NewSubstitutions() (s *Substitutions, err error) {
 		Config: cfg,
 	}
 
-	// Load Environment Variables
-	//err = init.getEnv()
-	//if err != nil {
-	//	return nil, err
-	//}
+	if len(decs) > 0 {
+		for _, d := range decs {
+			init.decryptors = append(init.decryptors, d)
+		}
+	}
+
+	envs, err := GetVariables("")
+	if err != nil {
+		return nil, err
+	}
+	init.Add(utils.ToInterface(envs))
+	if err != nil {
+		return nil, err
+	}
+	logrus.Debug("Loaded Environment Variables")
 
 	return init, nil
 }
@@ -136,4 +152,40 @@ func (s *Substitutions) Flatten() (map[string]string, error) {
 	}
 
 	return output, nil
+}
+
+func (s *Substitutions) Walk(path string, info fs.FileInfo, err error) error {
+	// Load File
+	compare := filepath.Ext(path)
+	if compare == s.Config.SubstFilePattern {
+		var c map[interface{}]interface{}
+		logrus.Debug("Loading file: ", path, "")
+		file, err := utils.NewFile(path)
+		if err != nil {
+			return err
+		}
+
+		// Read encrypted file
+		for _, d := range s.decryptors {
+			if d.IsEncrypted(file.Byte()) {
+				c, err = d.Read(file.Byte())
+				if err != nil {
+					return fmt.Errorf("failed to decrypt %s: %s", path, err)
+				}
+				continue
+			}
+		}
+
+		c, err = file.SPRUCE()
+		if err != nil {
+			return fmt.Errorf("failed error %s: %s", path, err)
+		}
+
+		err = s.Add(c)
+		if err != nil {
+			return fmt.Errorf("failed to merge %s: %s", path, err)
+		}
+
+	}
+	return err
 }

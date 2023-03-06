@@ -1,0 +1,48 @@
+---
+apiVersion: "cluster.k8s.io/v1alpha1"
+kind: MachineDeployment
+metadata:
+  name: main-workers
+  namespace: kube-system
+  annotations:
+    cluster.k8s.io/cluster-api-autoscaler-node-group-min-size: "3"
+    cluster.k8s.io/cluster-api-autoscaler-node-group-max-size: "10"
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  paused: false
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  minReadySeconds: 0
+  selector:
+    matchLabels:
+      kube-system: "true"
+  template:
+    metadata:
+      labels:
+         kube-system: "true"
+    spec:
+      providerSpec:
+        value:
+          cloudProvider: "nutanix"
+          cloudProviderSpec:
+            # Sets the vCPU count for this VM
+            cpus: 8
+            # Sets the CPU cores per vCPUs
+            cpuCores: 1
+            # Memory configuration in MiB
+            memoryMB: 16384
+            # Optional: Enable Nutanix' CPU passthrough feature
+            #cpuPassthrough: true
+            # Optional: Set up system disk size in GB. If not set, will be based on image size.
+            # Cannot be smaller than the image size.
+            #diskSize: 20
+          operatingSystem: "flatcar"
+          operatingSystemSpec:
+            distUpgradeOnBoot: false
+            disableAutoUpdate: false
+      versions:
+        kubelet: 1.25.0

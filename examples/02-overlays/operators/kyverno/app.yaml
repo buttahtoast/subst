@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    name: kyverno
+  annotations:
+    argocd.argoproj.io/sync-wave: "30"
+spec:
+  # Destination 
+  destination:
+    namespace: kyverno-system
+  # Reference: https://artifacthub.io/packages/helm/kyverno/kyverno
+  source:
+    repoURL: https://kyverno.github.io/kyverno/
+    targetRevision: 2.7.0
+    chart: kyverno
+    helm:
+      parameters: []
+      values: (( stringify subst.values.kyverno ))
