@@ -58,7 +58,7 @@ func NewSubstitutions(cfg SubstitutionsConfig, decrypts []decryptor.Decryptor) (
 
 	}
 
-	envs, err := GetVariables("")
+	envs, err := GetVariables(cfg.EnvironmentRegex)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,6 @@ func NewSubstitutions(cfg SubstitutionsConfig, decrypts []decryptor.Decryptor) (
 	if err != nil {
 		return nil, err
 	}
-	logrus.Debug("Loaded Environment Variables")
 
 	return init, nil
 }
@@ -164,8 +163,7 @@ func (s *Substitutions) Flatten() (map[string]string, error) {
 }
 
 func (s *Substitutions) Walk(path string, info fs.FileInfo, err error) error {
-
-	if !info.IsDir() {
+	if info.IsDir() {
 		return nil
 	}
 

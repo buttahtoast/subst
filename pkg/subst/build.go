@@ -10,7 +10,6 @@ import (
 	"github.com/buttahtoast/subst/pkg/decryptor"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/kustomize/api/resmap"
 )
 
 type Build struct {
@@ -58,7 +57,6 @@ func New(config config.Configuration) (build *Build, err error) {
 }
 
 func (b *Build) Build() error {
-	var manifests resmap.ResMap
 
 	// Flattened Environment Variables
 	flatEnv, err := b.Substitutions.Flatten()
@@ -68,7 +66,7 @@ func (b *Build) Build() error {
 
 	// Run Build
 	logrus.Debug("substitute manifests")
-	for _, manifest := range manifests.Resources() {
+	for _, manifest := range b.Kustomization.Build.Resources() {
 		var c map[interface{}]interface{}
 
 		mBytes, _ := manifest.MarshalJSON()

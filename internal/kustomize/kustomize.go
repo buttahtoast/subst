@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/kustomize/api/krusty"
 	"sigs.k8s.io/kustomize/api/resmap"
 	kustypes "sigs.k8s.io/kustomize/api/types"
@@ -50,7 +49,6 @@ func (k *Kustomize) addPath(path string) {
 	//	logrus.Debug("adding path: ", path)
 	//	k.Paths = append(k.Paths, path)
 	//}
-	logrus.Debug("adding path: ", path)
 	k.Paths = append(k.Paths, path)
 }
 
