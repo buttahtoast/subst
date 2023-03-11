@@ -11,7 +11,17 @@ A simple extension over kustomize, which allows further variable substitution an
 
 
 
-# Available Substitutions
+## Available Substitutions
+
+
+
+
+### Environment
+
+
+for environment variables which come from an argo application (`^ARGOCD_ENV_`) we remove the `ARGOCD_ENV_` and they are then available in your substitutions without the `ARGOCD_ENV_` prefix. This way they have the same name you have given them on the application ([Read More](https://argo-cd.readthedocs.io/en/stable/operator-manual/config-management-plugins/#using-environment-variables-in-your-plugin)). All the substions are available as flat key, so where needed you can use environment substitution
+
+
 
 ## Precedence
 
@@ -20,13 +30,15 @@ A simple extension over kustomize, which allows further variable substitution an
 
 ## Environment Substitution
 
+Adds support for [bash string replacement functions](https://github.com/drone/envsubst)
 
+By default environment substitution is not performed. You need to enable environment substituion with the following flag:
 
+```
+subst render . --envsubst
+```
 
-for environment variables which come from an argo application (`^ARGOCD_ENV_`) we remove the `ARGOCD_ENV_` and they are then available in your substitutions without the `ARGOCD_ENV_` prefix. This way they have the same name you have given them on the application ([Read More](https://argo-cd.readthedocs.io/en/stable/operator-manual/config-management-plugins/#using-environment-variables-in-your-plugin)). All the substions are available as flat key, so where needed you can use environment substitution
-
-
-You can disable environment substitution for a single file by giving it an annotation:
+You can disable environment substitution for a single file by giving it an annotation (assuming `--envsubst` is set):
 
 ```
 apiVersion: operatingsystemmanager.k8c.io/v1alpha1
@@ -37,12 +49,6 @@ metadata:
   annotations:
     kustomize.toolkit.fluxcd.io/substitute: "disabled"
 ....   
-```
-
-Or you can disable environment substition completely:
-
-```
-subst render . --envsubst
 ```
 
 ## Secrets

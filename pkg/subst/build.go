@@ -10,6 +10,7 @@ import (
 	"github.com/buttahtoast/subst/pkg/decryptor"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 type Build struct {
@@ -125,7 +126,22 @@ func (b *Build) loadSubstitutions() (err error) {
 	if err != nil {
 		return err
 	}
-	b.Substitutions.Subst = tree.Tree
+	finalDataRun := tree.Tree
+
+	if b.cfg.EnvSubstEnable {
+		// Flattened Environment Variables
+		flatEnv, err := b.Substitutions.Flatten()
+		if err != nil {
+			return fmt.Errorf("failed to flatten environment: %w", err)
+		}
+
+		finalDataRun, err = Envsubst(flatEnv, tree.Tree)
+		if err != nil {
+			return fmt.Errorf("envsubst failed %s", err)
+		}
+	}
+
+	b.Substitutions.Subst = finalDataRun
 	logrus.Debug("loaded substitutions: ", b.Substitutions.Subst)
 
 	return nil
@@ -134,17 +150,17 @@ func (b *Build) loadSubstitutions() (err error) {
 // initialize decryption
 func (b *Build) initialize() (err error) {
 
-	//var host string
-	//if b.cfg.KubeAPI != "" {
-	//	host = b.cfg.KubeAPI
-	//}
-	//cfg, err := clientcmd.BuildConfigFromFlags(host, b.cfg.Kubeconfig)
-	//if err == nil {
-	//	b.kubeClient, err = kubernetes.NewForConfig(cfg)
-	//	if err != nil {
-	//		logrus.Warnf("could not load kubernetes client: %s", err)
-	//	}
-	//}
+	var host string
+	if b.cfg.KubeAPI != "" {
+		host = b.cfg.KubeAPI
+	}
+	cfg, err := clientcmd.BuildConfigFromFlags(host, b.cfg.Kubeconfig)
+	if err == nil {
+		b.kubeClient, err = kubernetes.NewForConfig(cfg)
+		if err != nil {
+			logrus.Warnf("could not load kubernetes client: %s", err)
+		}
+	}
 
 	c := decryptor.DecryptorConfig{
 		SkipDecrypt: b.cfg.SkipDecrypt,
