@@ -2,9 +2,63 @@
 
 ![subst](./img/subst.png "subst")
 
-A simple extension over kustomize, which allows further variable substitution and simplified secrets management.
+__Currently under development and testing.__
 
-## Install
+A simple extension over kustomize, which allows further variable substitution and introduces simplified yet strong secrets management (for multi tenancy use-cases). Extends to functionality of kustomize for ArgoCD users.
+
+# Functionality
+
+
+
+
+# Available Substitutions
+
+
+## Spruce
+
+## Envsubstitution
+
+
+
+
+
+## Secrets
+
+You can both encrypt files which are part of the kustomize build or which are used for substitution. Currently for secret decryption we support both [ejson](https://github.com/Shopify/ejson) and [sops](https://github.com/mozilla/sops). You can use any combination of these decryption providers together. The principal for all decryption provider is, that they should load the private keys while a substiution build is made instead of having a permanent keystore. This allows for secret tenancy (eg. one secret per argo application). 
+
+Decryption can be disabled, in that case the files are just loaded, without their encryption properties (might be useful if you dont have access to the private keys to decrypt the secrets):
+
+```
+subst render . --skip-decrypt
+```
+
+Decryption can be enforced, if a secret can not be decrypted it's treated as an error:
+
+```
+subst render . --must-decrypt
+```
+
+### Kubernetes
+
+For all decryptors you can create a kubernetes secret, which contains the private information for secret decryption.
+
+
+
+### EJSON
+
+
+
+
+
+### SOPS
+
+[SOPS](https://github.com/mozilla/sops) is commonly known and also used by [FluxCD](https://fluxcd.io/flux/guides/mozilla-sops/). 
+
+
+# Running it
+
+
+## Local installation
 
 **Brew**
 
@@ -22,6 +76,14 @@ docker run -it ghcr.io/buttahtoast/subst -h
 
 https://github.com/buttahtoast/subst/releases
 
+
+## ArgoCD Plugin
+
+
+
+## CI/CD
+
+TBD
 
 
 

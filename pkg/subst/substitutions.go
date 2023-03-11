@@ -20,6 +20,10 @@ const (
 	specialCharsRegex = "[$&+,:;=?@#|'<>.^*()%!-/]"
 )
 
+var (
+	matchingRegex *regexp.Regexp
+)
+
 type Substitutions struct {
 	Subst      map[interface{}]interface{} `yaml:"subst"`
 	Config     SubstitutionsConfig         `yaml:"config"`
@@ -28,25 +32,30 @@ type Substitutions struct {
 
 type SubstitutionsConfig struct {
 	SubstKey         string `yaml:"subst_key"`
-	SubstFilePattern string `yaml:"subst_file_pattern"`
+	EnvironmentRegex string `yaml:"environment_regex"`
+	SubstFileRegex   string `yaml:"subst_file_pattern"`
 	FlattenLowerCase bool   `yaml:"lowercase"`
 }
 
-func NewSubstitutions(decs ...[]decryptor.Decryptor) (s *Substitutions, err error) {
-	cfg := SubstitutionsConfig{
-		SubstKey:         "subst",
-		FlattenLowerCase: false,
+func NewSubstitutions(cfg SubstitutionsConfig, decrypts []decryptor.Decryptor) (s *Substitutions, err error) {
+
+	if cfg.SubstKey == "" {
+		cfg.SubstKey = "subst"
 	}
 
 	init := &Substitutions{
-		Subst:  make(map[interface{}]interface{}),
-		Config: cfg,
+		Subst:      make(map[interface{}]interface{}),
+		Config:     cfg,
+		decryptors: decrypts,
 	}
 
-	if len(decs) > 0 {
-		for _, d := range decs {
-			init.decryptors = append(init.decryptors, d)
+	if init.Config.SubstFileRegex != "" {
+		matchingRegex, err = regexp.Compile(init.Config.SubstFileRegex)
+		if err != nil {
+			return nil, err
 		}
+		logrus.Debug("using regex: ", init.Config.SubstFileRegex)
+
 	}
 
 	envs, err := GetVariables("")
@@ -155,14 +164,22 @@ func (s *Substitutions) Flatten() (map[string]string, error) {
 }
 
 func (s *Substitutions) Walk(path string, info fs.FileInfo, err error) error {
-	// Load File
-	compare := filepath.Ext(path)
-	if compare == s.Config.SubstFilePattern {
+
+	if !info.IsDir() {
+		return nil
+	}
+
+	if matchingRegex.MatchString(filepath.Ext(path)) {
 		var c map[interface{}]interface{}
 		logrus.Debug("Loading file: ", path, "")
 		file, err := utils.NewFile(path)
 		if err != nil {
 			return err
+		}
+
+		c, err = file.SPRUCE()
+		if err != nil {
+			return fmt.Errorf("failed error %s: %s", path, err)
 		}
 
 		// Read encrypted file
@@ -174,11 +191,6 @@ func (s *Substitutions) Walk(path string, info fs.FileInfo, err error) error {
 				}
 				continue
 			}
-		}
-
-		c, err = file.SPRUCE()
-		if err != nil {
-			return fmt.Errorf("failed error %s: %s", path, err)
 		}
 
 		err = s.Add(c)

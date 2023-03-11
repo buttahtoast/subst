@@ -42,15 +42,16 @@ func NewKustomize(root string) (k *Kustomize, err error) {
 var kustomizeBuildMutex sync.Mutex
 
 // Add a new path (must be below kustomize root)
-func (k *Kustomize) AddPath(path string) {
+func (k *Kustomize) addPath(path string) {
+	//p, _, err := securePaths(k.Root, path)
+	//if err != nil {
+	//	logrus.Error(err)
+	//} else {
+	//	logrus.Debug("adding path: ", path)
+	//	k.Paths = append(k.Paths, path)
+	//}
 	logrus.Debug("adding path: ", path)
-	a, _, err := securePaths(k.Root, path)
-	if err != nil {
-		logrus.Error(err)
-	} else {
-		logrus.Debug("adding path: ", a)
-		k.Paths = append(k.Paths, path)
-	}
+	k.Paths = append(k.Paths, path)
 }
 
 // Resolve all paths from the kustomization file
@@ -63,7 +64,7 @@ func (k *Kustomize) paths(path string) (err error) {
 
 	// Add Patch Locations to paths
 	for _, patch := range kz.Patches {
-		k.AddPath(fmt.Sprintf("%v%v", path, filepath.Dir(patch.Path)))
+		k.addPath(fmt.Sprintf("%v%v", path, filepath.Dir(patch.Path)))
 	}
 
 	for _, resource := range kz.Resources {
@@ -71,13 +72,13 @@ func (k *Kustomize) paths(path string) (err error) {
 		file, _ := os.Stat(p)
 		if file.IsDir() {
 			p = convertPath(p)
-			k.AddPath(p)
-
-			// recursion
 			err := k.paths(p)
 			if err != nil {
 				return err
 			}
+
+			// Add Parent path after recursion (Has higher priority)
+			k.addPath(p)
 		}
 	}
 	return nil

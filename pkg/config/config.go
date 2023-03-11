@@ -15,21 +15,19 @@ import (
 )
 
 type Configuration struct {
-	AllowedEnvRegex      string        `mapstructure:"env-regex"`
-	RootDirectory        string        `mapstructure:"root-dir"`
-	EjsonFilePattern     string        `mapstructure:"ejson-pattern"`
-	EjsonSecret          string        `mapstructure:"ejson-secret"`
-	SopsSecret           string        `mapstructure:"sops-secret"`
-	EjsonSecretNamespace string        `mapstructure:"ejson-namespace"`
-	EjsonKey             []string      `mapstructure:"ejson-key"`
-	SkipDecrypt          bool          `mapstructure:"skip-decrypt"`
-	MustDecrypt          bool          `mapstructure:"must-decrypt"`
-	SkipEvaluation       bool          `mapstructure:"skip-eval"`
-	VarFilePattern       string        `mapstructure:"vars-pattern"`
-	Debug                bool          `mapstructure:"debug"`
-	KubectlTimeout       time.Duration `mapstructure:"kubectl-timeout"`
-	Kubeconfig           string        `mapstructure:"kubeconfig"`
-	KubeAPI              string        `mapstructure:"kube-api"`
+	EnvRegex        string        `mapstructure:"env-regex"`
+	EnvSubstEnable  bool          `mapstructure:"envsubst"`
+	RootDirectory   string        `mapstructure:"root-dir"`
+	FileRegex       string        `mapstructure:"file-regex"`
+	SecretName      string        `mapstructure:"secret-name"`
+	SecretNamespace string        `mapstructure:"secret-namespace"`
+	EjsonKey        []string      `mapstructure:"ejson-key"`
+	SkipDecrypt     bool          `mapstructure:"skip-decrypt"`
+	MustDecrypt     bool          `mapstructure:"must-decrypt"`
+	SkipEvaluation  bool          `mapstructure:"skip-eval"`
+	KubectlTimeout  time.Duration `mapstructure:"kubectl-timeout"`
+	Kubeconfig      string        `mapstructure:"kubeconfig"`
+	KubeAPI         string        `mapstructure:"kube-api"`
 }
 
 var (

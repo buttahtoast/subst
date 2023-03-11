@@ -21,20 +21,21 @@ const (
 )
 
 type EjsonDecryptor struct {
-	keys   []byte
+	keys   []string
 	Config DecryptorConfig // Embedded
 }
 
 // Initialize a new EJSON Decryptor
 func NewEJSONDecryptor(config DecryptorConfig, keys ...string) *EjsonDecryptor {
 	init := &EjsonDecryptor{
-		keys:   [32]byte{},
+		keys:   []string{},
 		Config: config,
 	}
 
-	// Static Keys
 	if len(keys) > 0 {
-		init.AddKeys(keys)
+		for _, key := range keys {
+			init.AddKey(key)
+		}
 	}
 
 	return init
@@ -59,22 +60,17 @@ func (d *EjsonDecryptor) AddKey(key string) {
 	}
 
 	if len(privkeyBytes) != 32 {
-		err = fmt.Errorf("invalid private key")
+		logrus.Error("invalid private key", privkeyBytes)
 		return
 	}
 
 	logrus.Debug("adding ejson key: ", privkeyBytes)
 
-	d.keys = append(d.keys, privkeyBytes)
-}
-
-// load keys from filesystem
-func (d *EjsonDecryptor) keysFromDirectory(path string) (err error) {
-
+	d.keys = append(d.keys, strings.TrimSpace(key))
 }
 
 // Load Keys from Kubernetes Secret
-func (d *EjsonDecryptor) KeysFromSecret(secret string, namespace string, client *kubernetes.Clientset) (err error) {
+func (d *EjsonDecryptor) FromSecret(secret string, namespace string, client *kubernetes.Clientset) (err error) {
 	kubernetesSecret, err := client.CoreV1().Secrets(namespace).Get(context.TODO(), secret, metav1.GetOptions{})
 	if k8serrors.IsNotFound(err) {
 		logrus.Debug("missing secret: %s/%s", namespace, secret)
@@ -120,7 +116,7 @@ func (d *EjsonDecryptor) Decrypt(data []byte) (content []byte, err error) {
 
 		// Try all loaded keys
 		for key := range d.keys {
-			err = ejson.Decrypt(f, &outputBuffer, "", d.keys[key])
+			err = ejson.Decrypt(f, &outputBuffer, "", string(d.keys[key]))
 			if err != nil {
 				continue
 			} else {

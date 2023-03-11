@@ -73,10 +73,8 @@ func addCommonFlags(flags *flag.FlagSet) {
 	flags.StringVar(&cfgFile, "config", "", "Config file")
 	flags.String("root-dir", ".", heredoc.Doc(`
 			Root directory`))
-	flags.String("ejson-pattern", ".ejson", heredoc.Doc(`
-			Pattern to discover ejson files`))
-	flags.String("vars-pattern", ".vars", heredoc.Doc(`
-			Pattern to discover var files`))
+	flags.String("file-regex", "(subst\\.yaml|.*(ejson|vars))", heredoc.Doc(`
+			Regex Pattern to discover substitution files`))
 	flags.StringSlice("extra-dirs", []string{}, heredoc.Doc(`
 			Additional directories to search for substitution files`))
 	flags.Bool("debug", false, heredoc.Doc(`

@@ -1,4 +1,4 @@
 creation_rules:
-  - path_regex: .*.(sops|vars)
+  - path_regex: .*
     encrypted_regex: ^(data|stringData)$
     pgp: 6B7C520EA7BDBD4253480E27431AD0078BD7613C

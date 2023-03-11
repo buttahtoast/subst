@@ -1,5 +1,7 @@
 package decryptor
 
+import "k8s.io/client-go/kubernetes"
+
 type DecryptorConfig struct {
 	// Decryption is skipped
 	SkipDecrypt bool
@@ -10,4 +12,5 @@ type DecryptorConfig struct {
 type Decryptor interface {
 	IsEncrypted(data []byte) bool
 	Read(data []byte) (content map[interface{}]interface{}, err error)
+	FromSecret(secret string, namespace string, client *kubernetes.Clientset) (err error)
 }

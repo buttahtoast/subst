@@ -35,12 +35,10 @@ func addRenderFlags(flags *flag.FlagSet) {
 	if flags.Lookup("kube-api") == nil {
 		flags.String("kube-api", "", "Kubernetes API Url")
 	}
-	flags.String("ejson-secret", "", heredoc.Doc(`
-	        Specify EJSON Secret name (each key within the secret will be used as a decryption key)`))
-	flags.String("ejson-namespace", "", heredoc.Doc(`
-	        Specify EJSON Secret namespace`))
-	flags.String("env-regex", "^ARGOCD_ENV_.*$", heredoc.Doc(`
-	        Only expose environment variables that match the given regex`))
+	flags.String("secret-name", "", heredoc.Doc(`
+	        Specify Secret name (each key within the secret will be used as a decryption key)`))
+	flags.String("secret-namespace", "", heredoc.Doc(`
+	        Specify Secret namespace`))
 	flags.StringSlice("ejson-key", []string{}, heredoc.Doc(`
 			Specify EJSON Private key used for decryption.
 			May be specified multiple times or separate values with commas`))
@@ -50,7 +48,10 @@ func addRenderFlags(flags *flag.FlagSet) {
 			Disable decryption of EJSON files`))
 	flags.Bool("skip-eval", false, heredoc.Doc(`
 			Skip Spruce evaluation for all files (Useful if required variables are not available)`))
-
+	flags.Bool("envsubst", true, heredoc.Doc(`
+			En/Disable environment variable substitution`))
+	flags.String("env-regex", "^ARGOCD_ENV_.*$", heredoc.Doc(`
+	        Only expose environment variables that match the given regex`))
 }
 
 func render(cmd *cobra.Command, args []string) error {
