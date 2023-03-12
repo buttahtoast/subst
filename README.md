@@ -8,11 +8,28 @@ A simple extension over kustomize, which allows further variable substitution an
 
 # Functionality
 
+## Getting Started
+
 
 
 
 ## Available Substitutions
 
+You can display which substitutions are available for a kustomize build by running:
+
+```
+subst substitutions .
+```
+
+
+
+See available options with:
+
+```
+subst substitutions -h
+```
+
+### Paths
 
 
 
@@ -23,10 +40,10 @@ for environment variables which come from an argo application (`^ARGOCD_ENV_`) w
 
 
 
-## Precedence
-
-
 ## Spruce
+
+[Spruce](https://github.com/geofffranks/spruce) is used to access the substition variables, it has more flexability than [envsubst](#environment-substitution). You can grab values from the available substitutions using [Spruce Operators](https://github.com/geofffranks/spruce/blob/main/doc/operators.md).
+
 
 ## Environment Substitution
 
@@ -50,6 +67,8 @@ metadata:
     kustomize.toolkit.fluxcd.io/substitute: "disabled"
 ....   
 ```
+
+If you want to skip a single variable, you can use `$${variable}`, this will print `${variable}`
 
 ## Secrets
 
