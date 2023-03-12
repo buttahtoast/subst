@@ -1,4 +1,11 @@
 .circleci
+.github/
 .history
 .idea
 .vscode
+examples/
+img/
+CODEOWNERS
+cosign
+LICENSE
+subst.rb

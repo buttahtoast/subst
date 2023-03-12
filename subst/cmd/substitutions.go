@@ -27,7 +27,12 @@ func newSubstitutionsCmd() *cobra.Command {
 }
 
 func substitutions(cmd *cobra.Command, args []string) error {
-	configuration, err := config.LoadConfiguration(cfgFile, cmd)
+	dir, err := rootDirectory(args)
+	if err != nil {
+		return err
+	}
+
+	configuration, err := config.LoadConfiguration(cfgFile, cmd, dir)
 	if err != nil {
 		return fmt.Errorf("failed loading configuration: %w", err)
 	}
@@ -37,7 +42,6 @@ func substitutions(cmd *cobra.Command, args []string) error {
 	}
 	if m != nil {
 		if len(m.Substitutions.Subst) > 0 {
-			fmt.Printf("%v", m.Kustomization.Paths)
 
 			y, err := yaml.Marshal(m.Substitutions)
 			if err != nil {

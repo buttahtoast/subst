@@ -135,9 +135,11 @@ func (d *EjsonDecryptor) Decrypt(data []byte) (content []byte, err error) {
 			}
 			return nil, e
 		}
-	} else {
-		return data, nil
 	}
 
-	return outputBuffer.Bytes(), nil
+	if outputBuffer.Bytes() != nil {
+		return outputBuffer.Bytes(), nil
+	}
+
+	return data, nil
 }

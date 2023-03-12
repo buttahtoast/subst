@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ConfigManagementPlugin
+metadata:
+# The name of the plugin is ignored, but must be present.
+# The discover function should evaluate to a list of files that match the plugin.
+# https://github.com/argoproj/argo-cd/discussions/8216
+  name: subst
+spec:
+  version: v1.0
+  discover:
+    fileName: ./kustomization.yaml
+  generate:
+    command:
+    - bash
+    - -c
+    - |
+        subst render  . --envsubst --secret-name ${ARGOCD_APP_NAME} --secret-namespace argocd --must-decrypt --must-eval
+  init:
+    command:
+    - bash
+    - -c
+    - |
+        subst substitutions  . --envsubst --secret-name ${ARGOCD_APP_NAME} --ejson-namespace argocd

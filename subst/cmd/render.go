@@ -18,6 +18,10 @@ func newRenderCmd() *cobra.Command {
 		Short: "Render structure with substitutions",
 		Long: heredoc.Doc(`
 			Run 'subst discover' to return directories that contain plugin compatible files. Mainly used for automatic plugin discovery by ArgoCD`),
+		Example: `# Render the local manifests
+subst render 
+# Render in a different directory
+subst render ../examples/02-overlays/clusters/cluster-01`,
 		RunE: render,
 	}
 
@@ -46,16 +50,21 @@ func addRenderFlags(flags *flag.FlagSet) {
 			Fail if not all ejson files can be decrypted`))
 	flags.Bool("skip-decrypt", false, heredoc.Doc(`
 			Disable decryption of EJSON files`))
-	flags.Bool("skip-eval", false, heredoc.Doc(`
-			Skip Spruce evaluation for all files (Useful if required variables are not available)`))
+	flags.Bool("must-eval", false, heredoc.Doc(`
+			Consider unsolved spruce evaluators as errors`))
 	flags.Bool("envsubst", false, heredoc.Doc(`
-			En/Disable environment variable substitution`))
+			Enable environment variable substitution`))
 	flags.String("env-regex", "^ARGOCD_ENV_.*$", heredoc.Doc(`
 	        Only expose environment variables that match the given regex`))
 }
 
 func render(cmd *cobra.Command, args []string) error {
-	configuration, err := config.LoadConfiguration(cfgFile, cmd)
+	dir, err := rootDirectory(args)
+	if err != nil {
+		return err
+	}
+
+	configuration, err := config.LoadConfiguration(cfgFile, cmd, dir)
 	if err != nil {
 		return fmt.Errorf("failed loading configuration: %w", err)
 	}

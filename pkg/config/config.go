@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"reflect"
 	"time"
 
@@ -24,7 +23,7 @@ type Configuration struct {
 	EjsonKey        []string      `mapstructure:"ejson-key"`
 	SkipDecrypt     bool          `mapstructure:"skip-decrypt"`
 	MustDecrypt     bool          `mapstructure:"must-decrypt"`
-	SkipEvaluation  bool          `mapstructure:"skip-eval"`
+	MustEval        bool          `mapstructure:"must-eval"`
 	KubectlTimeout  time.Duration `mapstructure:"kubectl-timeout"`
 	Kubeconfig      string        `mapstructure:"kubeconfig"`
 	KubeAPI         string        `mapstructure:"kube-api"`
@@ -36,7 +35,7 @@ var (
 	}
 )
 
-func LoadConfiguration(cfgFile string, cmd *cobra.Command) (*Configuration, error) {
+func LoadConfiguration(cfgFile string, cmd *cobra.Command, directory string) (*Configuration, error) {
 	v := viper.New()
 
 	cmd.Flags().VisitAll(func(flag *flag.Flag) {
@@ -50,23 +49,23 @@ func LoadConfiguration(cfgFile string, cmd *cobra.Command) (*Configuration, erro
 
 	if cfgFile != "" {
 		v.SetConfigFile(cfgFile)
-	} else {
-		v.SetConfigName("subst")
-		if cfgFile, ok := os.LookupEnv("SUBST_CONFIG_DIR"); ok {
-			v.AddConfigPath(cfgFile)
-		} else {
-			for _, searchLocation := range configLocations {
-				v.AddConfigPath(searchLocation)
-			}
-		}
 	}
 
-	logrus.Debugf("Using configuration file: %s", v.ConfigFileUsed())
+	//else {
+	//	v.AddConfigPath(directory)
+	//	v.SetConfigFile(".subst.yaml")
+	//}
+
+	if v.ConfigFileUsed() != "" {
+		logrus.Debugf("Using configuration file: %s", v.ConfigFileUsed())
+	}
 
 	if err := v.ReadInConfig(); err != nil {
-		if cfgFile != "" {
-			// Only error out for specified config file. Ignore for default locations.
-			return nil, fmt.Errorf("failed loading config file: %w", err)
+		switch err.(type) {
+		case viper.ConfigFileNotFoundError:
+			logrus.Debugf("No Config file found, loaded config from Environment")
+		default:
+			logrus.Fatalf("Error when Fetching Configuration - %s", err)
 		}
 	}
 
@@ -75,16 +74,14 @@ func LoadConfiguration(cfgFile string, cmd *cobra.Command) (*Configuration, erro
 		return nil, fmt.Errorf("failed unmarshaling configuration: %w", err)
 	}
 
-	// Resolve Root Directory
-	rootAbs, err := filepath.Abs(cfg.RootDirectory)
-	if err != nil {
-		return nil, fmt.Errorf("failed resolving root directory: %w", err)
-	} else {
-		cfg.RootDirectory = rootAbs
+	// Root Directory
+	cfg.RootDirectory = directory
+
+	if cfg.SecretName != "" && cfg.SecretNamespace == "" {
+		return nil, fmt.Errorf("secret-namespace must be set when --secret-name is set")
 	}
 
 	logrus.Debugf("Configuration: %+v\n", cfg)
-
 	return cfg, nil
 
 }

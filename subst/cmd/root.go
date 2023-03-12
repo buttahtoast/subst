@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
@@ -71,13 +72,24 @@ func setUpLogs(out io.Writer, level string) error {
 
 func addCommonFlags(flags *flag.FlagSet) {
 	flags.StringVar(&cfgFile, "config", "", "Config file")
-	flags.String("root-dir", ".", heredoc.Doc(`
-			Root directory`))
 	flags.String("file-regex", "(subst\\.yaml|.*(ejson|vars))", heredoc.Doc(`
 			Regex Pattern to discover substitution files`))
-	flags.StringSlice("extra-dirs", []string{}, heredoc.Doc(`
-			Additional directories to search for substitution files`))
 	flags.Bool("debug", false, heredoc.Doc(`
 			Print CLI calls of external tools to stdout (caution: setting this may
 			expose sensitive data)`))
+}
+
+func rootDirectory(args []string) (directory string, err error) {
+	directory = "."
+	if len(args) > 0 {
+		directory = args[0]
+	}
+	rootAbs, err := filepath.Abs(directory)
+	if err != nil {
+		return "", fmt.Errorf("failed resolving root directory: %w", err)
+	} else {
+		directory = rootAbs
+	}
+
+	return directory, nil
 }

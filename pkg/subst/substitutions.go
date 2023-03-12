@@ -62,7 +62,7 @@ func NewSubstitutions(cfg SubstitutionsConfig, decrypts []decryptor.Decryptor) (
 	if err != nil {
 		return nil, err
 	}
-	init.Add(utils.ToInterface(envs))
+	init.Add(utils.ToInterface(envs), true)
 	if err != nil {
 		return nil, err
 	}
@@ -87,9 +87,9 @@ func (s *Substitutions) GetMap() map[string]interface{} {
 }
 
 // adds new data to the Substitutions
-func (s *Substitutions) Add(data map[interface{}]interface{}) (err error) {
+func (s *Substitutions) Add(data map[interface{}]interface{}, optimistic bool) (err error) {
 
-	tree, err := s.Eval(data, nil)
+	tree, err := s.Eval(data, nil, optimistic)
 	if err != nil {
 		return fmt.Errorf("failed to build subtitutions: %s", err)
 	}
@@ -109,7 +109,7 @@ func (s *Substitutions) Add(data map[interface{}]interface{}) (err error) {
 }
 
 // Merge merges the Substitutions with the given data
-func (s *Substitutions) Eval(data map[interface{}]interface{}, substs map[interface{}]interface{}) (merge map[interface{}]interface{}, err error) {
+func (s *Substitutions) Eval(data map[interface{}]interface{}, substs map[interface{}]interface{}, optimistic bool) (eval map[interface{}]interface{}, err error) {
 	if substs == nil {
 		substs, err = s.Get()
 		if err != nil {
@@ -121,16 +121,25 @@ func (s *Substitutions) Eval(data map[interface{}]interface{}, substs map[interf
 		s.Config.SubstKey: substs,
 	}
 
-	merge, err = spruce.Merge(data, sub)
+	merge, err := spruce.Merge(data, sub)
 	if err != nil {
 		return nil, fmt.Errorf("could not merge manifest with subtitutions: %s", err)
 	}
 
-	tree, err := wrapper.SpruceOptimisticEval(merge, []string{s.Config.SubstKey})
-	if err != nil {
-		return nil, fmt.Errorf("could not merge manifest with subtitutions: %s", err)
+	if optimistic {
+		eval, err = wrapper.SpruceOptimisticEval(merge, []string{s.Config.SubstKey})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		tree, err := wrapper.SpruceEval(merge, []string{s.Config.SubstKey})
+		if err != nil {
+			return nil, err
+		}
+		eval = tree.Tree
 	}
-	return tree, nil
+
+	return eval, nil
 }
 
 func (s *Substitutions) Flatten() (map[string]string, error) {
@@ -169,7 +178,7 @@ func (s *Substitutions) Walk(path string, info fs.FileInfo, err error) error {
 
 	if matchingRegex.MatchString(filepath.Ext(path)) {
 		var c map[interface{}]interface{}
-		logrus.Debug("Loading file: ", path, "")
+		logrus.Debug("loading: ", path, "")
 		file, err := utils.NewFile(path)
 		if err != nil {
 			return err
@@ -183,6 +192,7 @@ func (s *Substitutions) Walk(path string, info fs.FileInfo, err error) error {
 		// Read encrypted file
 		for _, d := range s.decryptors {
 			if d.IsEncrypted(file.Byte()) {
+				logrus.Debugf("decrypted: %s", path)
 				c, err = d.Read(file.Byte())
 				if err != nil {
 					return fmt.Errorf("failed to decrypt %s: %s", path, err)
@@ -191,7 +201,7 @@ func (s *Substitutions) Walk(path string, info fs.FileInfo, err error) error {
 			}
 		}
 
-		err = s.Add(c)
+		err = s.Add(c, true)
 		if err != nil {
 			return fmt.Errorf("failed to merge %s: %s", path, err)
 		}

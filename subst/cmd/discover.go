@@ -24,7 +24,12 @@ func newDiscoverCmd() *cobra.Command {
 }
 
 func discover(cmd *cobra.Command, args []string) error {
-	configuration, err := config.LoadConfiguration(cfgFile, cmd)
+	dir, err := rootDirectory(args)
+	if err != nil {
+		return err
+	}
+
+	configuration, err := config.LoadConfiguration(cfgFile, cmd, dir)
 	if err != nil {
 		return fmt.Errorf("failed loading configuration: %w", err)
 	}

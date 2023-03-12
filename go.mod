@@ -93,6 +93,7 @@ require (
 	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87 // indirect
 	github.com/howeyc/gopass v0.0.0-20210920133722-c8aef6fb66ef // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
+	github.com/inancgumus/prettyslice v0.0.0-20190305220808-d802ba58098f // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jeremywohl/flatten v1.0.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect

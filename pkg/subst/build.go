@@ -5,7 +5,6 @@ import (
 
 	"github.com/buttahtoast/subst/internal/kustomize"
 	"github.com/buttahtoast/subst/internal/utils"
-	"github.com/buttahtoast/subst/internal/wrapper"
 	"github.com/buttahtoast/subst/pkg/config"
 	"github.com/buttahtoast/subst/pkg/decryptor"
 	"github.com/sirupsen/logrus"
@@ -90,7 +89,7 @@ func (b *Build) Build() error {
 			}
 		}
 
-		f, err := b.Substitutions.Eval(c, nil)
+		f, err := b.Substitutions.Eval(c, nil, b.cfg.MustEval)
 		if err != nil {
 			return fmt.Errorf("spruce evaluation failed %s/%s: %s", manifest.GetNamespace(), manifest.GetName(), err)
 		}
@@ -120,13 +119,13 @@ func (b *Build) loadSubstitutions() (err error) {
 	if err != nil {
 		return err
 	}
+	logrus.Debug("subtitution files loaded")
 
 	// Final attempt to evaluate
-	tree, err := wrapper.SpruceEval(b.Substitutions.Subst, []string{})
+	subst, err := b.Substitutions.Eval(b.Substitutions.Subst, nil, b.cfg.MustEval)
 	if err != nil {
 		return err
 	}
-	finalDataRun := tree.Tree
 
 	if b.cfg.EnvSubstEnable {
 		// Flattened Environment Variables
@@ -135,13 +134,13 @@ func (b *Build) loadSubstitutions() (err error) {
 			return fmt.Errorf("failed to flatten environment: %w", err)
 		}
 
-		finalDataRun, err = Envsubst(flatEnv, tree.Tree)
+		subst, err = Envsubst(flatEnv, subst)
 		if err != nil {
 			return fmt.Errorf("envsubst failed %s", err)
 		}
 	}
 
-	b.Substitutions.Subst = finalDataRun
+	b.Substitutions.Subst = subst
 	logrus.Debug("loaded substitutions: ", b.Substitutions.Subst)
 
 	return nil
@@ -149,18 +148,6 @@ func (b *Build) loadSubstitutions() (err error) {
 
 // initialize decryption
 func (b *Build) initialize() (err error) {
-
-	var host string
-	if b.cfg.KubeAPI != "" {
-		host = b.cfg.KubeAPI
-	}
-	cfg, err := clientcmd.BuildConfigFromFlags(host, b.cfg.Kubeconfig)
-	if err == nil {
-		b.kubeClient, err = kubernetes.NewForConfig(cfg)
-		if err != nil {
-			logrus.Warnf("could not load kubernetes client: %s", err)
-		}
-	}
 
 	c := decryptor.DecryptorConfig{
 		SkipDecrypt: b.cfg.SkipDecrypt,
@@ -175,11 +162,25 @@ func (b *Build) initialize() (err error) {
 
 	// SOPS
 
-	if !b.cfg.SkipDecrypt {
-		for _, decr := range b.decryptors {
-			err = decr.FromSecret(b.cfg.SecretName, b.cfg.SecretNamespace, b.kubeClient)
+	if !b.cfg.SkipDecrypt && (b.cfg.SecretName != "" && b.cfg.SecretNamespace != "") {
+
+		var host string
+		if b.cfg.KubeAPI != "" {
+			host = b.cfg.KubeAPI
+		}
+		cfg, err := clientcmd.BuildConfigFromFlags(host, b.cfg.Kubeconfig)
+		if err == nil {
+			b.kubeClient, err = kubernetes.NewForConfig(cfg)
 			if err != nil {
-				logrus.Warnf("failed to load secrets from Kubernetes: %s", err)
+				logrus.Warnf("could not load kubernetes client: %s", err)
+			} else {
+				for _, decr := range b.decryptors {
+					err = decr.FromSecret(b.cfg.SecretName, b.cfg.SecretNamespace, b.kubeClient)
+					if err != nil {
+						logrus.Warnf("failed to load secrets from Kubernetes: %s", err)
+					}
+				}
+
 			}
 		}
 	}

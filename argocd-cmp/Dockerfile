@@ -16,6 +16,7 @@ RUN cd subst/ && CGO_ENABLED=0 GOOS=linux GO111MODULE=on  go build \
 
 FROM --platform=linux/amd64 bash:5
 COPY --from=builder /workspace/subst/subst /usr/local/bin/subst
+COPY --from=builder /workspace/argocd-cmp/cmp.yaml /home/argocd/cmp-server/config/plugin.yaml
 RUN adduser -H -D -s /bin/bash -G nobody -u 999 argocd
 USER argocd:nobody
 #ENTRYPOINT ["/usr/local/bin/subst"]
