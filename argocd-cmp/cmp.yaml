@@ -14,7 +14,7 @@ spec:
     - bash
     - -c
     - |
-        subst render  . --envsubst --secret-name ${ARGOCD_APP_NAME} --secret-namespace argocd --must-decrypt --must-eval
+        subst render  . --envsubst --secret-name ${ARGOCD_APP_NAME} --secret-namespace argocd --must-decrypt --must-eval --kubeconfig /
   init:
     command:
     - bash

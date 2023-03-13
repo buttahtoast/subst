@@ -1,13 +1,13 @@
 project_name: subst
-
 env:
   - COSIGN_EXPERIMENTAL=true
-
+  - GO111MODULE=on
 before:
   hooks:
+    - go mod tidy
     - go mod download
-
-
+gomod:
+  proxy: true
 builds:
   - main: subst/main.go
     binary: subst
@@ -38,14 +38,19 @@ archives:
       - README.md
 release:
   footer: |
-    ## Docker Images
+    **Full Changelog**: https://github.com/goreleaser/goreleaser/compare/{{ .PreviousTag }}...{{ .Tag }}
+    
+    * * *
+
+    **Docker Images**
     - `ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}`
+    - `ghcr.io/buttahtoast/{{ .ProjectName }}-cmp:{{ .Tag }}`
+
 checksum:
   name_template: 'checksums.txt'
 
 snapshot:
   name_template: "{{ .Tag }}-next"
-
 dockers:
   - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}" ]
     dockerfile: Dockerfile
@@ -54,15 +59,19 @@ dockers:
     use: buildx
     build_flag_templates:
       - --platform=linux/arm64
-      - --label=org.opencontainers.image.version={{ .Version }}
-      - --label=org.opencontainers.image.revision={{ .Commit }}
-      - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.created={{ .Date }}
-      - --label=org.opencontainers.image.description=subst - Substitution based on Kustomize
-      - --label=org.opencontainers.image.vendor=Buttahtoast
-      - --label=org.opencontainers.image.licenses=Apache-2.0
-      - --label=org.opencontainers.image.source=https://github.com/butthatoast/subst
-      - --label=org.opencontainers.image.authors=Buttahtoast
+      - "--label=org.opencontainers.image.description=substitute your kustomize files"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.name={{.ProjectName}}-cmp"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--label=org.opencontainers.image.vendor=Buttahtoast"
+      - "--label=org.opencontainers.image.licenses=Apache-2.0"
+      - "--label=org.opencontainers.image.source=https://github.com/butthatoast/subst"
+      - "--label=org.opencontainers.image.authors=Buttahtoast"
+      - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/buttahtoast/subst/main/README.md"
+      - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
+      - "--label=io.artifacthub.package.license=Apache-2.0"
   - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}" ]
     dockerfile: Dockerfile
     goos: linux
@@ -70,100 +79,110 @@ dockers:
     use: buildx
     build_flag_templates:
       - --platform=linux/arm64
-      - --label=org.opencontainers.image.version={{ .Version }}
-      - --label=org.opencontainers.image.revision={{ .Commit }}
-      - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.created={{ .Date }}
-      - --label=org.opencontainers.image.description=subst - Substitution based on Kustomize
-      - --label=org.opencontainers.image.vendor=Buttahtoast
-      - --label=org.opencontainers.image.licenses=Apache-2.0
-      - --label=org.opencontainers.image.source=https://github.com/butthatoast/subst
-      - --label=org.opencontainers.image.authors=Buttahtoast
+      - "--label=org.opencontainers.image.description=substitute your kustomize files"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.name={{.ProjectName}}-cmp"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--label=org.opencontainers.image.vendor=Buttahtoast"
+      - "--label=org.opencontainers.image.licenses=Apache-2.0"
+      - "--label=org.opencontainers.image.source=https://github.com/butthatoast/subst"
+      - "--label=org.opencontainers.image.authors=Buttahtoast"
+      - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/buttahtoast/subst/main/README.md"
+      - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
+      - "--label=io.artifacthub.package.license=Apache-2.0"
   - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}" ]
-    dockerfile: Dockerfile
+    dockerfile: argocd-cmp/Dockerfile
     goos: linux
-    goarch: arm
+    goarch: amd64
     use: buildx
     build_flag_templates:
       - --platform=linux/arm64
-      - --label=org.opencontainers.image.version={{ .Version }}
-      - --label=org.opencontainers.image.revision={{ .Commit }}
-      - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.created={{ .Date }}
-      - --label=org.opencontainers.image.description=subst - Substitution based on Kustomize
-      - --label=org.opencontainers.image.vendor=Buttahtoast
-      - --label=org.opencontainers.image.licenses=Apache-2.0
-      - --label=org.opencontainers.image.authors=Buttahtoast
-      - --label=org.opencontainers.image.source=https://github.com/butthatoast/subst
-  # - skip_push: false
-  #   use: buildx
-  #   dockerfile: Dockerfile
-  #   image_templates:
-  #     - quay.io/helmpack/chart-testing:{{ .Tag }}-amd64
-  #     - quay.io/helmpack/chart-testing:latest-amd64
-  #   build_flag_templates:
-  #     - --platform=linux/amd64
-  #     - --label=org.opencontainers.image.version={{ .Version }}
-  #     - --label=org.opencontainers.image.revision={{ .Commit }}
-  #     - --label=org.opencontainers.image.title={{ .ProjectName }}
-  #     - --label=org.opencontainers.image.created={{ .Date }}
-  #     - --label=org.opencontainers.image.description=ct - The chart testing tool
-  #     - --label=org.opencontainers.image.vendor=Helm
-  #     - --label=org.opencontainers.image.licenses=Apache-2.0
-  #     - --label=org.opencontainers.image.source=https://github.com/helm/chart-testing
-  #     - --label=org.opencontainers.image.authors=The Helm Authors
-  #   extra_files:
-  #     - etc/chart_schema.yaml
-  #     - etc/lintconf.yaml
-  # - skip_push: false
-  #   goarch: arm64
-  #   use: buildx
-  #   dockerfile: Dockerfile
-  #   image_templates:
-  #     - quay.io/helmpack/chart-testing:{{ .Tag }}-arm64
-  #     - quay.io/helmpack/chart-testing:latest-arm64
-  #   build_flag_templates:
-  #     - --platform=linux/arm64
-  #     - --label=org.opencontainers.image.version={{ .Version }}
-  #     - --label=org.opencontainers.image.revision={{ .Commit }}
-  #     - --label=org.opencontainers.image.title={{ .ProjectName }}
-  #     - --label=org.opencontainers.image.created={{ .Date }}
-  #     - --label=org.opencontainers.image.description=subst - Substitution based on Kustomize
-  #     - --label=org.opencontainers.image.vendor=Buttahtoast
-  #     - --label=org.opencontainers.image.licenses=Apache-2.0
-  #     - --label=org.opencontainers.image.source=https://github.com/helm/chart-testing
-  #     - --label=org.opencontainers.image.authors=Buttahtoast
-  #   extra_files:
-  #     - etc/chart_schema.yaml
-  #     - etc/lintconf.yaml
-
-# docker_manifests:
-# - name_template: quay.io/buttahtoast/subst:latest
-#   image_templates:
-#   - quay.io/buttahtoast/subst:latest-amd64
-#   - quay.io/buttahtoast/subst:latest-arm64
-# - name_template: quay.io/buttahtoast/subst:{{ .Tag }}
-#   image_templates:
-#   - docker.io/buttahtoast/subst:{{ .Tag }}-amd64
-#   - quay.io/buttahtoast/subst:{{ .Tag }}-arm64
-
+      - "--label=org.opencontainers.image.description=substitute your kustomize files (ArgoCD Plugin)"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.name={{.ProjectName}}-cmp"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--label=org.opencontainers.image.vendor=Buttahtoast"
+      - "--label=org.opencontainers.image.licenses=Apache-2.0"
+      - "--label=org.opencontainers.image.source=https://github.com/butthatoast/subst"
+      - "--label=org.opencontainers.image.authors=Buttahtoast"
+      - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/buttahtoast/subst/main/README.md"
+      - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
+      - "--label=io.artifacthub.package.license=Apache-2.0"
+  - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}-cmp:{{ .Tag }}" ]
+    dockerfile: argocd-cmp/Dockerfile
+    goos: linux
+    goarch: arm64
+    use: buildx
+    build_flag_templates:
+      - --platform=linux/arm64
+      - "--label=org.opencontainers.image.description=substitute your kustomize files (ArgoCD Plugin)"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.name={{.ProjectName}}-cmp"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--label=org.opencontainers.image.vendor=Buttahtoast"
+      - "--label=org.opencontainers.image.licenses=Apache-2.0"
+      - "--label=org.opencontainers.image.source=https://github.com/butthatoast/subst"
+      - "--label=org.opencontainers.image.authors=Buttahtoast"
+      - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/buttahtoast/subst/main/README.md"
+      - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
+      - "--label=io.artifacthub.package.license=Apache-2.0"
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+    - '^test:'
+    - '^chore'
+    - 'merge conflict'
+    - Merge pull request
+    - Merge remote-tracking branch
+    - Merge branch
+    - go mod tidy
+  groups:
+    - title: Dependency updates
+      regexp: '^.*?(feat|fix)\(deps\)!?:.+$'
+      order: 300
+    - title: 'New Features'
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 100
+    - title: 'Bug fixes'
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 200
+    - title: 'Documentation updates'
+      regexp: ^.*?doc(\([[:word:]]+\))??!?:.+$
+      order: 400
+    - title: 'Build process updates'
+      regexp: ^.*?build(\([[:word:]]+\))??!?:.+$
+      order: 400
+    - title: Other work
+      order: 9999
+sboms:
+  - artifacts: archive
 signs:
   - cmd: cosign
     stdin: '{{ .Env.COSIGN_PWD }}'
     args: ["sign-blob", "-key=cosign.key", "-output=${signature}", "${artifact}"]
     artifacts: checksum
-
 docker_signs:
-  - id: images
-    cmd: cosign
-    args: ["sign", "${artifact}"]
-    artifacts: manifests
-    stdin: '{{ .Env.COSIGN_PWD }}'
+- cmd: cosign
+  artifacts: manifests
+  output: true
+  stdin: '{{ .Env.COSIGN_PWD }}'
+  args:
+  - 'sign'
+  - '${artifact}@${digest}'
+  - --yes
 brews:
   - tap:
       owner: buttahtoast
       name: subst
-      branch: dev
+      branch: main
     license: Apache-2.0
     homepage: "github.com/buttahtoast/subst"
     description: "subst - Substitution based on Kustomize"

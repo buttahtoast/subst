@@ -50,8 +50,6 @@ func addRenderFlags(flags *flag.FlagSet) {
 			Fail if not all ejson files can be decrypted`))
 	flags.Bool("skip-decrypt", false, heredoc.Doc(`
 			Disable decryption of EJSON files`))
-	flags.Bool("must-eval", false, heredoc.Doc(`
-			Consider unsolved spruce evaluators as errors`))
 	flags.Bool("envsubst", false, heredoc.Doc(`
 			Enable environment variable substitution`))
 	flags.String("env-regex", "^ARGOCD_ENV_.*$", heredoc.Doc(`

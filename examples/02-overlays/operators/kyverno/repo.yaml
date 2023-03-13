@@ -10,4 +10,4 @@ stringData:
   url: https://kyverno.github.io/kyverno/
   name: kyverno
   type: helm
-  proxy: (( grab $.subst.proxy ))
+  proxy: (( grab $.subst.proxy || "" ))

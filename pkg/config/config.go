@@ -23,7 +23,6 @@ type Configuration struct {
 	EjsonKey        []string      `mapstructure:"ejson-key"`
 	SkipDecrypt     bool          `mapstructure:"skip-decrypt"`
 	MustDecrypt     bool          `mapstructure:"must-decrypt"`
-	MustEval        bool          `mapstructure:"must-eval"`
 	KubectlTimeout  time.Duration `mapstructure:"kubectl-timeout"`
 	Kubeconfig      string        `mapstructure:"kubeconfig"`
 	KubeAPI         string        `mapstructure:"kube-api"`

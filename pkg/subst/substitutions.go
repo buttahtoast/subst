@@ -3,7 +3,6 @@ package subst
 import (
 	"fmt"
 	"io/fs"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -176,7 +175,7 @@ func (s *Substitutions) Walk(path string, info fs.FileInfo, err error) error {
 		return nil
 	}
 
-	if matchingRegex.MatchString(filepath.Ext(path)) {
+	if matchingRegex.MatchString(info.Name()) {
 		var c map[interface{}]interface{}
 		logrus.Debug("loading: ", path, "")
 		file, err := utils.NewFile(path)

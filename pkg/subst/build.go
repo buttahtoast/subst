@@ -89,7 +89,7 @@ func (b *Build) Build() error {
 			}
 		}
 
-		f, err := b.Substitutions.Eval(c, nil, b.cfg.MustEval)
+		f, err := b.Substitutions.Eval(c, nil, false)
 		if err != nil {
 			return fmt.Errorf("spruce evaluation failed %s/%s: %s", manifest.GetNamespace(), manifest.GetName(), err)
 		}
@@ -122,10 +122,11 @@ func (b *Build) loadSubstitutions() (err error) {
 	logrus.Debug("subtitution files loaded")
 
 	// Final attempt to evaluate
-	subst, err := b.Substitutions.Eval(b.Substitutions.Subst, nil, b.cfg.MustEval)
+	eval, err := b.Substitutions.Eval(b.Substitutions.Subst, nil, false)
 	if err != nil {
 		return err
 	}
+	b.Substitutions.Subst = eval
 
 	if b.cfg.EnvSubstEnable {
 		// Flattened Environment Variables
@@ -134,13 +135,12 @@ func (b *Build) loadSubstitutions() (err error) {
 			return fmt.Errorf("failed to flatten environment: %w", err)
 		}
 
-		subst, err = Envsubst(flatEnv, subst)
+		envsubst, err := Envsubst(flatEnv, eval)
 		if err != nil {
 			return fmt.Errorf("envsubst failed %s", err)
 		}
+		b.Substitutions.Subst = envsubst
 	}
-
-	b.Substitutions.Subst = subst
 	logrus.Debug("loaded substitutions: ", b.Substitutions.Subst)
 
 	return nil
