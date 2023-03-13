@@ -10,7 +10,7 @@ A simple extension over kustomize, which allows further variable substitution an
 
 The idea for subst is to act as complementary for kustomize. You can reference additional variables for your environment or from different kustomize paths, which are then accesible across your entire kustomize build. The kustomize you are referencing to is resolved (it's paths). In each of these paths you can create new substition files, which contain variables or secrets, which then can be used by your kustomization. The final output is your built kustomization with the substitutions made.
 
-By default the all files are considered using this regex `(subst\\.yaml|vars\\.yaml|.*(ejson|vars))`. You can change the regex using:
+By default the all files are considered using this regex `(.*subst\.yaml|.*(ejson|vars))`. You can change the regex using:
 
 ```
 subst render . --file-regex "custom-values\\.yaml"
@@ -39,6 +39,33 @@ subst substitutions -h
 
 ### Paths
 
+The priority is used from the kustomize declartion. First all the patch paths are read. Then the `resources` are added in given order. So if you want to overwrite something (highest resource), it should be the last entry in the `resources` The directory the kustomization is recursively resolved from has always highest priority. See Example:
+
+
+**/test/build/kustomization.yaml**
+
+```
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - operators/
+  - ../addons/values/high-available
+patches:
+  - path: ../../apps/common/patches/argo-appproject.yaml
+    target:
+      kind: AppProject
+  - path: ./patches/argo-app-settings.yaml
+    target:
+      kind: Application
+```
+
+Results in the following paths (order by precedence):
+
+  1. /test/build/
+  2. /test/build/../addons/values/high-available
+  3. /test/build/operators/
+  4. /test/build/patches
+  5. /test/build/../../apps/common/patches
 
 
 ### Environment

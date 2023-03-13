@@ -14,10 +14,10 @@ spec:
     - bash
     - -c
     - |
-        subst render  . --envsubst --secret-name ${ARGOCD_APP_NAME} --secret-namespace argocd --must-decrypt --must-eval --kubeconfig /
+        subst render  . --envsubst --secret-name ${ARGOCD_APP_NAME} --secret-namespace argocd --env-regex "^ARGOCD_ENV_.*$" --must-decrypt --kubeconfig /etc/kubernetes/admin.conf
   init:
     command:
     - bash
     - -c
     - |
-        subst substitutions  . --envsubst --secret-name ${ARGOCD_APP_NAME} --ejson-namespace argocd
+        subst substitutions  . --envsubst --env-regex "^ARGOCD_ENV_.*$"
