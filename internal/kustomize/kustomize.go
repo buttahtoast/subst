@@ -2,6 +2,8 @@ package kustomize
 
 import (
 	"fmt"
+	"io/fs"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -41,7 +43,12 @@ func NewKustomize(root string) (k *Kustomize, err error) {
 var kustomizeBuildMutex sync.Mutex
 
 // Add a new path (must be below kustomize root)
-func (k *Kustomize) addPath(path string) {
+func (k *Kustomize) addPath(path string) error {
+	p, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+
 	//p, _, err := securePaths(k.Root, path)
 	//if err != nil {
 	//	logrus.Error(err)
@@ -49,7 +56,16 @@ func (k *Kustomize) addPath(path string) {
 	//	logrus.Debug("adding path: ", path)
 	//	k.Paths = append(k.Paths, path)
 	//}
-	k.Paths = append(k.Paths, path)
+
+	// if path is not already in the list, add it
+	for _, v := range k.Paths {
+		if v == p {
+			return nil
+		}
+	}
+
+	k.Paths = append(k.Paths, p)
+	return nil
 }
 
 // Resolve all paths from the kustomization file
@@ -83,11 +99,19 @@ func (k *Kustomize) paths(path string) (err error) {
 }
 
 // Generic funtion to walk all paths and run a function on each file
-func (k *Kustomize) Walk(fn filepath.WalkFunc) error {
+func (k *Kustomize) Walk(fn func(path string, f fs.FileInfo) error) error {
 	for path := range k.Paths {
-		err := filepath.Walk(k.Paths[path], fn)
-		if err != nil {
+		buildDir, err := ioutil.ReadDir(k.Paths[path])
+
+		if err != nil && err != fs.SkipDir {
 			return err
+		}
+
+		for _, file := range buildDir {
+			err = fn(k.Paths[path], file)
+			if err != nil && err != fs.SkipDir {
+				return err
+			}
 		}
 	}
 	return nil

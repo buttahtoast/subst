@@ -18,8 +18,13 @@ subst render . --file-regex "custom-values\\.yaml"
 
 ## Getting Started
 
+For `subst` to work you must already have a functional kustomize build. Even without any extra substitutions you can run:
 
+```
+subst render <path-to-kustomize>
+```
 
+Which will simply build the kustomize.
 
 ## Available Substitutions
 
@@ -28,8 +33,6 @@ You can display which substitutions are available for a kustomize build by runni
 ```
 subst substitutions .
 ```
-
-
 
 See available options with:
 
@@ -40,7 +43,6 @@ subst substitutions -h
 ### Paths
 
 The priority is used from the kustomize declartion. First all the patch paths are read. Then the `resources` are added in given order. So if you want to overwrite something (highest resource), it should be the last entry in the `resources` The directory the kustomization is recursively resolved from has always highest priority. See Example:
-
 
 **/test/build/kustomization.yaml**
 
@@ -67,6 +69,7 @@ Results in the following paths (order by precedence):
   4. /test/build/patches
   5. /test/build/../../apps/common/patches
 
+Note that directories do not resolve by recursion (eg. `/test/build/` only collects files and skips any subdirectories).
 
 ### Environment
 
@@ -123,8 +126,6 @@ subst render . --must-decrypt
 [EJSON](https://github.com/Shopify/ejson) allows simple secrets management. I like it, because you can rencrypt secrets without having the private key, which is sometimes useful. 
 
 You can encrypt entire files using EJSON. The file must be in json format (which is fun for kustomize). The entire file will be encrypted, which may not bes useful in all cases.
-
-
 
 
 ### SOPS

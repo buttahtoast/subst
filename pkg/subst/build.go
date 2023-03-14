@@ -128,20 +128,24 @@ func (b *Build) loadSubstitutions() (err error) {
 	}
 	b.Substitutions.Subst = eval
 
-	if b.cfg.EnvSubstEnable {
-		// Flattened Environment Variables
-		flatEnv, err := b.Substitutions.Flatten()
-		if err != nil {
-			return fmt.Errorf("failed to flatten environment: %w", err)
-		}
+	if len(b.Substitutions.Subst) > 0 {
+		if b.cfg.EnvSubstEnable {
+			// Flattened Environment Variables
+			flatEnv, err := b.Substitutions.Flatten()
+			if err != nil {
+				return fmt.Errorf("failed to flatten environment: %w", err)
+			}
 
-		envsubst, err := Envsubst(flatEnv, eval)
-		if err != nil {
-			return fmt.Errorf("envsubst failed %s", err)
+			envsubst, err := Envsubst(flatEnv, eval)
+			if err != nil {
+				return fmt.Errorf("envsubst failed %s", err)
+			}
+			b.Substitutions.Subst = envsubst
 		}
-		b.Substitutions.Subst = envsubst
+		logrus.Debug("loaded substitutions: ", b.Substitutions.Subst)
+	} else {
+		logrus.Debug("no substitutions found")
 	}
-	logrus.Debug("loaded substitutions: ", b.Substitutions.Subst)
 
 	return nil
 }

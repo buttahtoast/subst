@@ -3,6 +3,7 @@ package subst
 import (
 	"fmt"
 	"io/fs"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -170,31 +171,33 @@ func (s *Substitutions) Flatten() (map[string]string, error) {
 	return output, nil
 }
 
-func (s *Substitutions) Walk(path string, info fs.FileInfo, err error) error {
-	if info.IsDir() {
-		return nil
-	}
+func (s *Substitutions) Walk(path string, f fs.FileInfo) (err error) {
 
-	if matchingRegex.MatchString(info.Name()) {
+	if f.IsDir() {
+		return filepath.SkipDir
+	}
+	full := filepath.Join(path, f.Name())
+
+	if matchingRegex.MatchString(f.Name()) {
 		var c map[interface{}]interface{}
-		logrus.Debug("loading: ", path, "")
-		file, err := utils.NewFile(path)
+		logrus.Debug("loading: ", full, "")
+		file, err := utils.NewFile(full)
 		if err != nil {
 			return err
 		}
 
 		c, err = file.SPRUCE()
 		if err != nil {
-			return fmt.Errorf("failed error %s: %s", path, err)
+			return fmt.Errorf("failed error %s: %s", full, err)
 		}
 
 		// Read encrypted file
 		for _, d := range s.decryptors {
 			if d.IsEncrypted(file.Byte()) {
-				logrus.Debugf("decrypted: %s", path)
+				logrus.Debugf("decrypted: %s", full)
 				c, err = d.Read(file.Byte())
 				if err != nil {
-					return fmt.Errorf("failed to decrypt %s: %s", path, err)
+					return fmt.Errorf("failed to decrypt %s: %s", full, err)
 				}
 				continue
 			}
@@ -202,7 +205,7 @@ func (s *Substitutions) Walk(path string, info fs.FileInfo, err error) error {
 
 		err = s.Add(c, true)
 		if err != nil {
-			return fmt.Errorf("failed to merge %s: %s", path, err)
+			return fmt.Errorf("failed to merge %s: %s", full, err)
 		}
 
 	}
