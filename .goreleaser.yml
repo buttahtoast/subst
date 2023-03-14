@@ -160,8 +160,8 @@ changelog:
       order: 400
     - title: Other work
       order: 9999
-sboms:
-  - artifacts: archive
+#sboms:
+#  - artifacts: archive
 #signs:
 #  - cmd: cosign
 #    stdin: '{{ .Env.COSIGN_PWD }}'
