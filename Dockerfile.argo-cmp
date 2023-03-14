@@ -1,6 +1,6 @@
 FROM bash:5
 COPY subst /subst
-COPY subst/cmp.yaml /home/argocd/cmp-server/config/plugin.yaml
+COPY argocd-cmp/cmp.yaml /home/argocd/cmp-server/config/plugin.yaml
 RUN adduser -H -D -s /bin/bash -G nobody -u 999 argocd
 USER argocd:nobody
 #ENTRYPOINT ["/usr/local/bin/subst"]
