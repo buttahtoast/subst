@@ -114,6 +114,8 @@ dockers:
       - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/buttahtoast/subst/main/README.md"
       - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
       - "--label=io.artifacthub.package.license=Apache-2.0"
+    extra_files:
+    - argocd-cmp/cmp.yaml
   - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}-cmp:{{ .Tag }}" ]
     dockerfile: Dockerfile.argo-cmp
     goos: linux
@@ -135,6 +137,8 @@ dockers:
       - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/buttahtoast/subst/main/README.md"
       - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
       - "--label=io.artifacthub.package.license=Apache-2.0"
+    extra_files:
+    - argocd-cmp/cmp.yaml
 changelog:
   sort: asc
   use: github
