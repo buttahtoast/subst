@@ -71,26 +71,26 @@ dockers:
       - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/buttahtoast/subst/main/README.md"
       - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
       - "--label=io.artifacthub.package.license=Apache-2.0"
-  - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}" ]
-    dockerfile: Dockerfile
-    goos: linux
-    goarch: arm64
-    use: buildx
-    build_flag_templates:
-      - --platform=linux/arm64
-      - "--label=org.opencontainers.image.description=substitute your kustomize files"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.name={{.ProjectName}}-cmp"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source={{.GitURL}}"
-      - "--label=org.opencontainers.image.vendor=Buttahtoast"
-      - "--label=org.opencontainers.image.licenses=Apache-2.0"
-      - "--label=org.opencontainers.image.source=https://github.com/butthatoast/subst"
-      - "--label=org.opencontainers.image.authors=Buttahtoast"
-      - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/buttahtoast/subst/main/README.md"
-      - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
-      - "--label=io.artifacthub.package.license=Apache-2.0"
+  #- image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}" ]
+  #  dockerfile: Dockerfile
+  #  goos: linux
+  #  goarch: arm64
+  #  use: buildx
+  #  build_flag_templates:
+  #    - --platform=linux/arm64
+  #    - "--label=org.opencontainers.image.description=substitute your kustomize files"
+  #    - "--label=org.opencontainers.image.created={{.Date}}"
+  #    - "--label=org.opencontainers.image.name={{.ProjectName}}-cmp"
+  #    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  #    - "--label=org.opencontainers.image.version={{.Version}}"
+  #    - "--label=org.opencontainers.image.source={{.GitURL}}"
+  #    - "--label=org.opencontainers.image.vendor=Buttahtoast"
+  #    - "--label=org.opencontainers.image.licenses=Apache-2.0"
+  #    - "--label=org.opencontainers.image.source=https://github.com/butthatoast/subst"
+  #    - "--label=org.opencontainers.image.authors=Buttahtoast"
+  #    - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/buttahtoast/subst/main/README.md"
+  #    - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
+  #    - "--label=io.artifacthub.package.license=Apache-2.0"
   - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}-cmp:{{ .Tag }}" ]
     dockerfile: Dockerfile.argo-cmp
     goos: linux
@@ -111,26 +111,26 @@ dockers:
       - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/buttahtoast/subst/main/README.md"
       - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
       - "--label=io.artifacthub.package.license=Apache-2.0"
-  - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}-cmp:{{ .Tag }}" ]
-    dockerfile: Dockerfile.argo-cmp
-    goos: linux
-    goarch: arm64
-    use: buildx
-    build_flag_templates:
-      - --platform=linux/arm64
-      - "--label=org.opencontainers.image.description=substitute your kustomize files (ArgoCD Plugin)"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.name={{.ProjectName}}-cmp"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source={{.GitURL}}"
-      - "--label=org.opencontainers.image.vendor=Buttahtoast"
-      - "--label=org.opencontainers.image.licenses=Apache-2.0"
-      - "--label=org.opencontainers.image.source=https://github.com/butthatoast/subst"
-      - "--label=org.opencontainers.image.authors=Buttahtoast"
-      - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/buttahtoast/subst/main/README.md"
-      - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
-      - "--label=io.artifacthub.package.license=Apache-2.0"
+  #- image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}-cmp:{{ .Tag }}" ]
+  #  dockerfile: Dockerfile.argo-cmp
+  #  goos: linux
+  #  goarch: arm64
+  #  use: buildx
+  #  build_flag_templates:
+  #    - --platform=linux/arm64
+  #    - "--label=org.opencontainers.image.description=substitute your kustomize files (ArgoCD Plugin)"
+  #    - "--label=org.opencontainers.image.created={{.Date}}"
+  #    - "--label=org.opencontainers.image.name={{.ProjectName}}-cmp"
+  #    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  #    - "--label=org.opencontainers.image.version={{.Version}}"
+  #    - "--label=org.opencontainers.image.source={{.GitURL}}"
+  #    - "--label=org.opencontainers.image.vendor=Buttahtoast"
+  #    - "--label=org.opencontainers.image.licenses=Apache-2.0"
+  #    - "--label=org.opencontainers.image.source=https://github.com/butthatoast/subst"
+  #    - "--label=org.opencontainers.image.authors=Buttahtoast"
+  #    - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/buttahtoast/subst/main/README.md"
+  #    - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
+  #    - "--label=io.artifacthub.package.license=Apache-2.0"
 changelog:
   sort: asc
   use: github
