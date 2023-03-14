@@ -57,7 +57,7 @@ dockers:
     goarch: amd64
     use: buildx
     build_flag_templates:
-      - --platform=linux/arm64
+      - "--platform=linux/amd64"
       - "--label=org.opencontainers.image.description=substitute your kustomize files"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.name={{.ProjectName}}-cmp"
@@ -91,13 +91,13 @@ dockers:
       - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/buttahtoast/subst/main/README.md"
       - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
       - "--label=io.artifacthub.package.license=Apache-2.0"
-  - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}" ]
+  - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}-cmp:{{ .Tag }}" ]
     dockerfile: argocd-cmp/Dockerfile
     goos: linux
     goarch: amd64
     use: buildx
     build_flag_templates:
-      - --platform=linux/arm64
+      - "--platform=linux/amd64"
       - "--label=org.opencontainers.image.description=substitute your kustomize files (ArgoCD Plugin)"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.name={{.ProjectName}}-cmp"
@@ -142,7 +142,6 @@ changelog:
     - Merge pull request
     - Merge remote-tracking branch
     - Merge branch
-    - go mod tidy
   groups:
     - title: Dependency updates
       regexp: '^.*?(feat|fix)\(deps\)!?:.+$'
