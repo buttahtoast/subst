@@ -14,12 +14,12 @@ builds:
       - CGO_ENABLED=0
     goarch:
       - amd64
-      - arm64
-      - arm
+    #  - arm64
+    #  - arm
     goos:
       - linux
-      - darwin
-      - windows
+    #  - darwin
+    #  - windows
     flags:
       - -trimpath
     mod_timestamp: '{{ .CommitTimestamp }}'
@@ -162,20 +162,20 @@ changelog:
       order: 9999
 sboms:
   - artifacts: archive
-signs:
-  - cmd: cosign
-    stdin: '{{ .Env.COSIGN_PWD }}'
-    args: ["sign-blob", "-key=cosign.key", "-output=${signature}", "${artifact}"]
-    artifacts: checksum
-docker_signs:
-- cmd: cosign
-  artifacts: manifests
-  output: true
-  stdin: '{{ .Env.COSIGN_PWD }}'
-  args:
-  - 'sign'
-  - '${artifact}@${digest}'
-  - --yes
+#signs:
+#  - cmd: cosign
+#    stdin: '{{ .Env.COSIGN_PWD }}'
+#    args: ["sign-blob", "-key=cosign.key", "-output=${signature}", "${artifact}"]
+#    artifacts: checksum
+#docker_signs:
+#- cmd: cosign
+#  artifacts: manifests
+#  output: true
+#  stdin: '{{ .Env.COSIGN_PWD }}'
+#  args:
+#  - 'sign'
+#  - '${artifact}@${digest}'
+#  - --yes
 brews:
   - tap:
       owner: buttahtoast
