@@ -69,7 +69,7 @@ docker-build: ## dockerize golang application
 
 .PHONY: docker-build-cmp
 docker-build-cmp: ## build argocd plugin
-	docker build . -f argocd-cmp/Dockerfile -t ${PLUGIN_IMG} --build-arg GIT_HEAD_COMMIT=$(GIT_HEAD_COMMIT) \
+	docker build . -f Dockerfile.argo-cmp -t ${PLUGIN_IMG} --build-arg GIT_HEAD_COMMIT=$(GIT_HEAD_COMMIT) \
  		--build-arg GIT_TAG_COMMIT=$(GIT_TAG_COMMIT) \
  		--build-arg GIT_MODIFIED=$(GIT_MODIFIED) \
  		--build-arg GIT_REPO=$(GIT_REPO) \

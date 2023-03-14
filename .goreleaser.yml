@@ -14,12 +14,12 @@ builds:
       - CGO_ENABLED=0
     goarch:
       - amd64
-    #  - arm64
-    #  - arm
+      - arm64
+      - arm
     goos:
       - linux
-    #  - darwin
-    #  - windows
+      - darwin
+      - windows
     flags:
       - -trimpath
     mod_timestamp: '{{ .CommitTimestamp }}'
@@ -92,7 +92,7 @@ dockers:
       - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
       - "--label=io.artifacthub.package.license=Apache-2.0"
   - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}-cmp:{{ .Tag }}" ]
-    dockerfile: argocd-cmp/Dockerfile
+    dockerfile: Dockerfile.argo-cmp
     goos: linux
     goarch: amd64
     use: buildx
@@ -112,7 +112,7 @@ dockers:
       - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
       - "--label=io.artifacthub.package.license=Apache-2.0"
   - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}-cmp:{{ .Tag }}" ]
-    dockerfile: argocd-cmp/Dockerfile
+    dockerfile: Dockerfile.argo-cmp
     goos: linux
     goarch: arm64
     use: buildx
@@ -160,22 +160,22 @@ changelog:
       order: 400
     - title: Other work
       order: 9999
-#sboms:
-#  - artifacts: archive
-#signs:
-#  - cmd: cosign
-#    stdin: '{{ .Env.COSIGN_PWD }}'
-#    args: ["sign-blob", "-key=cosign.key", "-output=${signature}", "${artifact}"]
-#    artifacts: checksum
-#docker_signs:
-#- cmd: cosign
-#  artifacts: manifests
-#  output: true
-#  stdin: '{{ .Env.COSIGN_PWD }}'
-#  args:
-#  - 'sign'
-#  - '${artifact}@${digest}'
-#  - --yes
+sboms:
+  - artifacts: archive
+signs:
+  - cmd: cosign
+    stdin: '{{ .Env.COSIGN_PWD }}'
+    args: ["sign-blob", "-key=cosign.key", "-output=${signature}", "${artifact}"]
+    artifacts: checksum
+docker_signs:
+- cmd: cosign
+  artifacts: manifests
+  output: true
+  stdin: '{{ .Env.COSIGN_PWD }}'
+  args:
+  - 'sign'
+  - '${artifact}@${digest}'
+  - --yes
 brews:
   - tap:
       owner: buttahtoast
