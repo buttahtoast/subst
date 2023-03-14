@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 golang:1.19-alpine as builder
+FROM golang:1.19-alpine as builder
 WORKDIR /workspace
 COPY . .
 RUN go mod download
@@ -14,7 +14,7 @@ RUN cd subst/ && CGO_ENABLED=0 GOOS=linux GO111MODULE=on  go build \
         -ldflags "-X main.GitRepo=$GIT_REPO -X main.GitTag=$GIT_LAST_TAG -X main.GitCommit=$GIT_HEAD_COMMIT -X main.GitDirty=$GIT_MODIFIED -X main.BuildTime=$BUILD_DATE" \
         -o subst
 
-FROM --platform=linux/amd64 bash:5
+FROM bash:5
 COPY --from=builder /workspace/subst/subst /usr/local/bin/subst
 COPY --from=builder /workspace/argocd-cmp/cmp.yaml /home/argocd/cmp-server/config/plugin.yaml
 RUN adduser -H -D -s /bin/bash -G nobody -u 999 argocd
