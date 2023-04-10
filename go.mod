@@ -12,7 +12,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/nqd/flat v0.2.0
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/cobra v1.6.1
+	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.14.0
 	github.com/starkandwayne/goutils v0.0.0-20190115202530-896b8a6904be
