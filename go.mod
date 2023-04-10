@@ -8,7 +8,7 @@ require (
 	github.com/cyphar/filepath-securejoin v0.2.3
 	github.com/drone/envsubst v1.0.3
 	github.com/geofffranks/simpleyaml v0.0.0-20161109204137-c9320f076de5
-	github.com/geofffranks/spruce v1.29.0
+	github.com/geofffranks/spruce v1.30.2
 	github.com/json-iterator/go v1.1.12
 	github.com/nqd/flat v0.2.0
 	github.com/sirupsen/logrus v1.8.1
@@ -27,7 +27,7 @@ require (
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible // indirect
 	github.com/aws/aws-sdk-go v1.44.168 // indirect
-	github.com/cloudfoundry-community/vaultkv v0.5.0 // indirect
+	github.com/cloudfoundry-community/vaultkv v0.6.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/gojson v0.0.0-20160307161227-2e71ec9dd5ad // indirect
@@ -59,7 +59,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/ginkgo/v2 v2.5.0 // indirect
 	github.com/onsi/gomega v1.24.1 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
@@ -74,11 +73,11 @@ require (
 	github.com/ziutek/utils v0.0.0-20190626152656-eb2a3b364d6c // indirect
 	go.starlark.net v0.0.0-20221205180719-3fd0dac74452 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
-	golang.org/x/net v0.4.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.3.0 // indirect
-	golang.org/x/sys v0.3.0 // indirect
-	golang.org/x/term v0.3.0 // indirect
-	golang.org/x/text v0.5.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
