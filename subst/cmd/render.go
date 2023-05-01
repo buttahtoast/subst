@@ -54,6 +54,9 @@ func addRenderFlags(flags *flag.FlagSet) {
 			Enable environment variable substitution`))
 	flags.String("env-regex", "^ARGOCD_ENV_.*$", heredoc.Doc(`
 	        Only expose environment variables that match the given regex`))
+	flags.String("output", "yaml", heredoc.Doc(`
+	        Output format. One of: yaml, json`))
+
 }
 
 func render(cmd *cobra.Command, args []string) error {
@@ -79,7 +82,11 @@ func render(cmd *cobra.Command, args []string) error {
 		}
 		if m.Manifests != nil {
 			for _, f := range m.Manifests {
-				utils.PrintYAML(f)
+				if configuration.Output == "json" {
+					utils.PrintJSON(f)
+				} else {
+					utils.PrintYAML(f)
+				}
 			}
 		}
 	}
