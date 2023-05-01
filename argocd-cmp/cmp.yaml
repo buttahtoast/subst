@@ -15,9 +15,3 @@ spec:
     - -c
     - |
         /subst render  . --envsubst --secret-name ${ARGOCD_APP_NAME} --secret-namespace argocd --env-regex "^ARGOCD_ENV_.*$" --must-decrypt --kubeconfig /etc/kubernetes/admin.conf
-  init:
-    command:
-    - bash
-    - -c
-    - |
-        /subst substitutions  . --envsubst --env-regex "^ARGOCD_ENV_.*$"

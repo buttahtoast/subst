@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"regexp"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -26,6 +27,7 @@ type Configuration struct {
 	KubectlTimeout  time.Duration `mapstructure:"kubectl-timeout"`
 	Kubeconfig      string        `mapstructure:"kubeconfig"`
 	KubeAPI         string        `mapstructure:"kube-api"`
+	Output          string        `mapstructure:"output"`
 }
 
 var (
@@ -75,6 +77,11 @@ func LoadConfiguration(cfgFile string, cmd *cobra.Command, directory string) (*C
 
 	// Root Directory
 	cfg.RootDirectory = directory
+
+	if cfg.SecretName != "" {
+		regex := regexp.MustCompile(`[^a-zA-Z0-9]+`)
+		cfg.SecretName = regex.ReplaceAllString(cfg.SecretName, "-")
+	}
 
 	if cfg.SecretName != "" && cfg.SecretNamespace == "" {
 		return nil, fmt.Errorf("secret-namespace must be set when --secret-name is set")

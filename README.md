@@ -26,6 +26,16 @@ subst render <path-to-kustomize>
 
 Which will simply build the kustomize.
 
+### ArgoCD
+
+
+
+
+**Applications in Projects**
+
+If an application is in a project, the value of `$ARGOCD_APP_NAME` looks like this: `<project-name>_<application-name>`. For example, if the application `my-app` is in the project `my-project`, the value of `$ARGOCD_APP_NAME` is `my-project_my-app`. 
+All special characters within are converted to `-` (dash). For example, if the application `my-app` is in the project `my-project`, the value of `$ARGOCD_APP_NAME` is `my-project-my-app`. So the secret reference is then `my-project-my-app` in the secret namespace.
+
 ## Available Substitutions
 
 You can display which substitutions are available for a kustomize build by running:

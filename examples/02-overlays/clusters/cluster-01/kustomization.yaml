@@ -3,5 +3,3 @@ kind: Kustomization
 resources:
   - ../../overlays/location/bern
   - workers
-  - apps
-  - operators

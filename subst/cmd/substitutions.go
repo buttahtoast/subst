@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/buttahtoast/subst/internal/utils"
 	"github.com/buttahtoast/subst/pkg/config"
 	"github.com/buttahtoast/subst/pkg/subst"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
 )
 
 func newSubstitutionsCmd() *cobra.Command {
@@ -42,24 +42,11 @@ func substitutions(cmd *cobra.Command, args []string) error {
 	}
 	if m != nil {
 		if len(m.Substitutions.Subst) > 0 {
-
-			y, err := yaml.Marshal(m.Substitutions)
-			if err != nil {
-				return err
+			if configuration.Output == "json" {
+				utils.PrintJSON(m.Substitutions.Subst)
+			} else {
+				utils.PrintYAML(m.Substitutions.Subst)
 			}
-			fmt.Println("\nAvailable for substitution: \n\n" + string(y))
-
-			f, err := m.Substitutions.Flatten()
-			if err != nil {
-				return err
-			}
-
-			e, err := yaml.Marshal(f)
-			if err != nil {
-				return err
-			}
-
-			fmt.Println("\nFlattened (Environment Variable Style): \n\n" + string(e))
 		}
 	}
 

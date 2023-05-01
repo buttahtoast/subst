@@ -81,10 +81,10 @@ func PrintYAML(data map[interface{}]interface{}) error {
 
 // create a golang function which prints map[interface{}]interface{}
 func PrintJSON(data map[interface{}]interface{}) error {
-	j, err := json.Marshal(data)
+	j, err := json.MarshalIndent(mapify(data), "", "  ")
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s\n", string(j))
+	fmt.Println(string(j))
 	return err
 }
