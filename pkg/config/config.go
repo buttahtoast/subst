@@ -16,7 +16,6 @@ import (
 
 type Configuration struct {
 	EnvRegex        string        `mapstructure:"env-regex"`
-	EnvSubstEnable  bool          `mapstructure:"envsubst"`
 	RootDirectory   string        `mapstructure:"root-dir"`
 	FileRegex       string        `mapstructure:"file-regex"`
 	SecretName      string        `mapstructure:"secret-name"`
