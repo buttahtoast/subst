@@ -56,13 +56,7 @@ func New(config config.Configuration) (build *Build, err error) {
 	return init, err
 }
 
-func (b *Build) Build() error {
-
-	// Flattened Environment Variables
-	flatEnv, err := b.Substitutions.Flatten()
-	if err != nil {
-		return fmt.Errorf("failed to flatten environment: %w", err)
-	}
+func (b *Build) Build() (err error) {
 
 	// Run Build
 	logrus.Debug("substitute manifests")
@@ -93,17 +87,6 @@ func (b *Build) Build() error {
 		if err != nil {
 			return fmt.Errorf("spruce evaluation failed %s/%s: %s", manifest.GetNamespace(), manifest.GetName(), err)
 		}
-
-		// Run Environment substitution
-		if len(flatEnv) > 0 {
-			if b.cfg.EnvSubstEnable {
-				f, err = Envsubst(flatEnv, f)
-				if err != nil {
-					return fmt.Errorf("envsubst failed %s/%s: %s", manifest.GetNamespace(), manifest.GetName(), err)
-				}
-			}
-		}
-
 		b.Manifests = append(b.Manifests, f)
 	}
 	logrus.Infof("build finished")
@@ -129,19 +112,6 @@ func (b *Build) loadSubstitutions() (err error) {
 	b.Substitutions.Subst = eval
 
 	if len(b.Substitutions.Subst) > 0 {
-		if b.cfg.EnvSubstEnable {
-			// Flattened Environment Variables
-			flatEnv, err := b.Substitutions.Flatten()
-			if err != nil {
-				return fmt.Errorf("failed to flatten environment: %w", err)
-			}
-
-			envsubst, err := Envsubst(flatEnv, eval)
-			if err != nil {
-				return fmt.Errorf("envsubst failed %s", err)
-			}
-			b.Substitutions.Subst = envsubst
-		}
 		logrus.Debug("loaded substitutions: ", b.Substitutions.Subst)
 	} else {
 		logrus.Debug("no substitutions found")

@@ -135,7 +135,7 @@ func (k *Kustomize) build() (err error) {
 
 	buildOptions := &krusty.Options{
 		LoadRestrictions: kustypes.LoadRestrictionsNone,
-		PluginConfig:     kustypes.DisabledPluginConfig(),
+		PluginConfig:     kustypes.EnabledPluginConfig(kustypes.BuiltinPluginLoadingOptions(kustypes.PluginRestrictionsNone)),
 	}
 
 	b := krusty.MakeKustomizer(buildOptions)

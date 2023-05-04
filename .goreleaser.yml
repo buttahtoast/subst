@@ -37,7 +37,7 @@ archives:
       - README.md
 release:
   footer: |
-    **Full Changelog**: https://github.com/goreleaser/goreleaser/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/buttahtoast/{{ .ProjectName }}/compare/{{ .PreviousTag }}...{{ .Tag }}
     
     * * *
 
@@ -79,10 +79,10 @@ dockers:
   #  use: buildx
   #  skip_push: false
   #  build_flag_templates:
-  #    - --platform=linux/arm64
-  #    - "--label=org.opencontainers.image.description=substitute your kustomize files"
-  #    - "--label=org.opencontainers.image.created={{.Date}}"
-  #    - "--label=org.opencontainers.image.name={{.ProjectName}}-cmp"
+  #    - --platform=linux/arm64 
+  #    - "--label=org.opencontainers.image description=substitute your kustomize files"
+  #    - "--label=o rg.opencontainers.image.created={{.Date}}"
+  #    - "--label=org.opencontainers.image.   name={{.ProjectName}}-cmp"
   #    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
   #    - "--label=org.opencontainers.image.version={{.Version}}"
   #    - "--label=org.opencontainers.image.source={{.GitURL}}"
@@ -105,8 +105,8 @@ dockers:
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.name={{.ProjectName}}-cmp"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--label=org.opencontainers.image.version={{.Version}}" 
+      - "--label=org.opencontainers.image.source={{.GitURL}}"  
       - "--label=org.opencontainers.image.vendor=Buttahtoast"
       - "--label=org.opencontainers.image.licenses=Apache-2.0"
       - "--label=org.opencontainers.image.source=https://github.com/butthatoast/subst"
@@ -173,7 +173,7 @@ sboms:
 signs:
   - cmd: cosign
     stdin: '{{ .Env.COSIGN_PWD }}'
-    args: ["sign-blob", "-key=cosign.key", "-output=${signature}", "${artifact}"]
+    args: ["sign-blob", "--key=cosign.key", "--output=${signature}", "${artifact}"]
     artifacts: checksum
 docker_signs:
 - cmd: cosign

@@ -85,35 +85,13 @@ Note that directories do not resolve by recursion (eg. `/test/build/` only colle
 
 for environment variables which come from an argo application (`^ARGOCD_ENV_`) we remove the `ARGOCD_ENV_` and they are then available in your substitutions without the `ARGOCD_ENV_` prefix. This way they have the same name you have given them on the application ([Read More](https://argo-cd.readthedocs.io/en/stable/operator-manual/config-management-plugins/#using-environment-variables-in-your-plugin)). All the substions are available as flat key, so where needed you can use environment substitution.
 
+### Substitution (Envsubst)
+
+Subst does not support Environment Substitution. However we have a transformator, which allows to perform environment substitutions (outside of the subst context). [Read More](https://github.com/buttahtoast/transformers/tree/main/transformers/substitution)
+
 ## Spruce
 
 [Spruce](https://github.com/geofffranks/spruce) is used to access the substition variables, it has more flexability than [envsubst](#environment-substitution). You can grab values from the available substitutions using [Spruce Operators](https://github.com/geofffranks/spruce/blob/main/doc/operators.md). Spurce is greate, because it's operators are valid YAML which allows to build the kustomize without any further hacking.
-
-
-## Environment Substitution
-
-Adds support for [bash string replacement functions](https://github.com/drone/envsubst)
-
-By default environment substitution is not performed. You need to enable environment substituion with the following flag:
-
-```
-subst render . --envsubst
-```
-
-You can disable environment substitution for a single file by giving it an annotation (assuming `--envsubst` is set):
-
-```
-apiVersion: operatingsystemmanager.k8c.io/v1alpha1
-kind: OperatingSystemProfile
-metadata:
-  name: osp-flatcar
-  namespace: kube-system
-  annotations:
-    kustomize.toolkit.fluxcd.io/substitute: "disabled"
-....   
-```
-
-If you want to skip a single variable, you can use `$${variable}`, this will print `${variable}`
 
 ## Secrets
 
