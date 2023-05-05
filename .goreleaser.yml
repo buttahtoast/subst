@@ -15,11 +15,9 @@ builds:
     goarch:
       - amd64
       - arm64
-      - arm
     goos:
       - linux
       - darwin
-      - windows
     flags:
       - -trimpath
     mod_timestamp: '{{ .CommitTimestamp }}'
@@ -28,13 +26,6 @@ builds:
         -X github.com/buttahtoast/subst/subst/cmd.Version={{ .Tag }}
         -X github.com/buttahtoast/subst/subst/cmd.GitCommit={{ .Commit }}
         -X github.com/buttahtoast/subst/subst/cmd.BuildDate={{ .Date }}
-archives:
-  - format_overrides:
-      - goos: windows
-        format: zip
-    files:
-      - LICENSE
-      - README.md
 release:
   footer: |
     **Full Changelog**: https://github.com/buttahtoast/{{ .ProjectName }}/compare/{{ .PreviousTag }}...{{ .Tag }}
@@ -51,7 +42,9 @@ checksum:
 snapshot:
   name_template: "{{ .Tag }}-next"
 dockers:
-  - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}" ]
+  - image_templates: 
+      - "ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}"
+      - "ghcr.io/buttahtoast/{{ .ProjectName }}:latest"
     dockerfile: Dockerfile
     goos: linux
     goarch: amd64
@@ -93,8 +86,10 @@ dockers:
   #    - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/buttahtoast/subst/main/README.md"
   #    - "--label=io.artifacthub.package.logo-url=https://github.com/buttahtoast/subst/raw/main/img/subst.png"
   #    - "--label=io.artifacthub.package.license=Apache-2.0"
-  - image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}-cmp:{{ .Tag }}" ]
-    dockerfile: Dockerfile.argo-cmp
+  - image_templates: 
+    - "ghcr.io/buttahtoast/{{ .ProjectName }}-cmp:{{ .Tag }}"
+    - "ghcr.io/buttahtoast/{{ .ProjectName }}-cmp:latest"
+    dockerfile: argocd-cmp/Dockerfile
     goos: linux
     goarch: amd64
     use: buildx
@@ -116,6 +111,7 @@ dockers:
       - "--label=io.artifacthub.package.license=Apache-2.0"
     extra_files:
     - argocd-cmp/cmp.yaml
+    - argocd-cmp/entrypoint.sh
   #- image_templates: [ "ghcr.io/buttahtoast/{{ .ProjectName }}-cmp:{{ .Tag }}" ]
   #  dockerfile: Dockerfile.argo-cmp
   #  goos: linux
@@ -184,13 +180,13 @@ docker_signs:
   - 'sign'
   - '${artifact}@${digest}'
   - --yes
-brews:
-  - tap:
-      owner: buttahtoast
-      name: subst
-      branch: main
-    license: Apache-2.0
-    homepage: "github.com/buttahtoast/subst"
-    description: "subst - Substitution based on Kustomize"
-    post_install: |
-      puts '🌈 subst installed 🌈'
+#brews:
+#  - tap:
+#      owner: buttahtoast
+#      name: subst
+#      branch: main
+#    license: Apache-2.0
+#    homepage: "github.com/buttahtoast/subst"
+#    description: "subst - Substitution based on Kustomize"
+#    post_install: |
+#      puts '🌈 subst installed 🌈'
