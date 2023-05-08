@@ -6,10 +6,8 @@ require (
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/Shopify/ejson v1.3.3
 	github.com/cyphar/filepath-securejoin v0.2.3
-	github.com/drone/envsubst v1.0.3
 	github.com/geofffranks/simpleyaml v0.0.0-20161109204137-c9320f076de5
 	github.com/geofffranks/spruce v1.29.0
-	github.com/json-iterator/go v1.1.12
 	github.com/nqd/flat v0.2.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.6.1
@@ -20,8 +18,7 @@ require (
 	k8s.io/apimachinery v0.26.0
 	k8s.io/client-go v0.26.0
 	sigs.k8s.io/kustomize/api v0.13.2
-	sigs.k8s.io/kustomize/kyaml v0.14.1
-	sigs.k8s.io/yaml v1.3.0
+	sigs.k8s.io/kustomize/kyaml v0.14.2
 )
 
 require (
@@ -51,6 +48,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
@@ -91,4 +89,5 @@ require (
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
+	sigs.k8s.io/yaml v1.3.0 // indirect
 )
