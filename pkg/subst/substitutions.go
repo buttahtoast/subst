@@ -5,15 +5,15 @@ import (
 	"io/fs"
 	"path/filepath"
 	"regexp"
-	"strings"
+	"text/template"
 
 	"github.com/buttahtoast/subst/internal/utils"
 	"github.com/buttahtoast/subst/internal/wrapper"
 	"github.com/buttahtoast/subst/pkg/decryptor"
 	"github.com/geofffranks/spruce"
-	flat "github.com/nqd/flat"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/kustomize/api/resmap"
 )
 
 const (
@@ -28,6 +28,8 @@ type Substitutions struct {
 	Subst      map[interface{}]interface{} `yaml:"subst"`
 	Config     SubstitutionsConfig         `yaml:"config"`
 	decryptors []decryptor.Decryptor
+	funcmap    template.FuncMap
+	Resources  resmap.ResMap
 }
 
 type SubstitutionsConfig struct {
@@ -37,7 +39,7 @@ type SubstitutionsConfig struct {
 	FlattenLowerCase bool   `yaml:"lowercase"`
 }
 
-func NewSubstitutions(cfg SubstitutionsConfig, decrypts []decryptor.Decryptor) (s *Substitutions, err error) {
+func NewSubstitutions(cfg SubstitutionsConfig, decrypts []decryptor.Decryptor, res resmap.ResMap) (s *Substitutions, err error) {
 
 	if cfg.SubstKey == "" {
 		cfg.SubstKey = "subst"
@@ -47,6 +49,7 @@ func NewSubstitutions(cfg SubstitutionsConfig, decrypts []decryptor.Decryptor) (
 		Subst:      make(map[interface{}]interface{}),
 		Config:     cfg,
 		decryptors: decrypts,
+		Resources:  res,
 	}
 
 	if init.Config.SubstFileRegex != "" {
@@ -57,6 +60,9 @@ func NewSubstitutions(cfg SubstitutionsConfig, decrypts []decryptor.Decryptor) (
 		logrus.Debug("using regex: ", init.Config.SubstFileRegex)
 
 	}
+
+	// Load sprig functionMap
+	init.funcmap = utils.SprigFuncMap()
 
 	envs, err := GetVariables(cfg.EnvironmentRegex)
 	if err != nil {
@@ -142,35 +148,6 @@ func (s *Substitutions) Eval(data map[interface{}]interface{}, substs map[interf
 	return eval, nil
 }
 
-func (s *Substitutions) Flatten() (map[string]string, error) {
-	output := make(map[string]string)
-
-	b := s.GetMap()
-	f, err := flat.Flatten(b, &flat.Options{Prefix: "", Delimiter: "_", MaxDepth: 50, Safe: false})
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert to map[string]string
-	for k, v := range f {
-		key := k
-
-		// Convert unallowed characters to underscores
-		r := regexp.MustCompile(specialCharsRegex)
-		if r.MatchString(key) {
-			key = r.ReplaceAllString(key, "_")
-		}
-
-		// Convert to lowercase
-		if s.Config.FlattenLowerCase {
-			key = strings.ToLower(key)
-		}
-		output[key] = fmt.Sprint(v)
-	}
-
-	return output, nil
-}
-
 func (s *Substitutions) Walk(path string, f fs.FileInfo) (err error) {
 
 	if f.IsDir() {
@@ -188,7 +165,14 @@ func (s *Substitutions) Walk(path string, f fs.FileInfo) (err error) {
 
 		c, err = file.SPRUCE()
 		if err != nil {
-			return fmt.Errorf("failed error %s: %s", full, err)
+			err := file.Template(s.funcmap, s.Subst)
+			if err != nil {
+				return fmt.Errorf("failed to template %s: %s", full, err)
+			}
+			c, err = file.SPRUCE()
+			if err != nil {
+				return fmt.Errorf("failed to parse %s: %s", full, err)
+			}
 		}
 
 		// Read encrypted file
@@ -203,11 +187,19 @@ func (s *Substitutions) Walk(path string, f fs.FileInfo) (err error) {
 			}
 		}
 
-		err = s.Add(c, true)
-		if err != nil {
-			return fmt.Errorf("failed to merge %s: %s", full, err)
+		if c[resourcesField] != nil {
+			logrus.Debugf("detected resources in %s", full)
+			err = s.addResources(c[resourcesField].([]interface{}))
+			if err != nil {
+				return fmt.Errorf("failed to add resources from %s: %s", full, err)
+			}
+			delete(c, resourcesField)
+		} else {
+			err = s.Add(c, true)
+			if err != nil {
+				return fmt.Errorf("failed to merge %s: %s", full, err)
+			}
 		}
-
 	}
 	return err
 }

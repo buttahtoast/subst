@@ -42,7 +42,7 @@ func New(config config.Configuration) (build *Build, err error) {
 		SubstFileRegex:   init.cfg.FileRegex,
 	}
 
-	s, err := NewSubstitutions(SubstitutionsConfig, init.decryptors)
+	s, err := NewSubstitutions(SubstitutionsConfig, init.decryptors, k.Build)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,6 @@ func New(config config.Configuration) (build *Build, err error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return init, err
 }
 
@@ -60,7 +59,7 @@ func (b *Build) Build() (err error) {
 
 	// Run Build
 	logrus.Debug("substitute manifests")
-	for _, manifest := range b.Kustomization.Build.Resources() {
+	for _, manifest := range b.Substitutions.Resources.Resources() {
 		var c map[interface{}]interface{}
 
 		mBytes, _ := manifest.MarshalJSON()

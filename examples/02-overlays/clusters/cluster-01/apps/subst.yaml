@@ -1,0 +1,4 @@
+settings:
+  cluster:
+    name: "cluster-01"
+Context: {{- toYaml $ | nindent 4 }}
