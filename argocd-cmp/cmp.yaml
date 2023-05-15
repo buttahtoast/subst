@@ -11,7 +11,14 @@ spec:
     fileName: ./kustomization.yaml
   generate:
     command:
-    - bash
-    - -c
-    - |
-        /subst render "." --secret-name "${ARGOCD_APP_NAME}" --secret-namespace  "argocd" --env-regex "^ARGOCD_ENV_.*$" --must-decrypt --kubeconfig "/etc/kubernetes/kubeconfig"
+    - /subst
+    args:
+    - render
+    - "."
+    - --secret-namespace
+    - "argocd"
+    - --env-regex
+    - "^ARGOCD_ENV_.*$"
+    - --must-decrypt
+    - --kubeconfig
+    - "/etc/kubernetes/kubeconfig"
