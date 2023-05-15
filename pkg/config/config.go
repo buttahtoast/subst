@@ -77,6 +77,10 @@ func LoadConfiguration(cfgFile string, cmd *cobra.Command, directory string) (*C
 	// Root Directory
 	cfg.RootDirectory = directory
 
+	if cfg.SecretName == "" {
+		cfg.SecretName = os.Getenv("ARGOCD_APP_NAME")
+	}
+
 	if cfg.SecretName != "" {
 		regex := regexp.MustCompile(`[^a-zA-Z0-9]+`)
 		cfg.SecretName = regex.ReplaceAllString(cfg.SecretName, "-")
