@@ -28,6 +28,66 @@ Which will simply build the kustomize.
 
 ### ArgoCD
 
+Install it with the [ArgoCD community chart](https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd). These Values should work:
+
+
+```yaml
+...
+    repoServer:
+      enabled: true
+      clusterAdminAccess:
+        enabled: true
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - all
+        readOnlyRootFilesystem: true
+        runAsUser: 1001
+        runAsGroup: 1001
+      volumes:
+      - emptyDir: {}
+        name: subst-tmp
+      - emptyDir: {}
+        name: subst-kubeconfig
+      extraContainers:
+      - name: cmp-subst
+        args: [/var/run/argocd/argocd-cmp-server]
+        image: ghcr.io/buttahtoast/subst-cmp:v0.3.0-alpha1
+        imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - all
+          readOnlyRootFilesystem: true
+          runAsUser: 1001
+          runAsGroup: 1001
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        volumeMounts:
+          - mountPath: /var/run/argocd
+            name: var-files
+          - mountPath: /home/argocd/cmp-server/plugins
+            name: plugins
+          # Starting with v2.4, do NOT mount the same tmp volume as the repo-server container. The filesystem separation helps
+          # mitigate path traversal attacks.
+          - mountPath: /tmp
+            name: subst-tmp
+          - mountPath: /etc/kubernetes/
+            name: subst-kubeconfig
+...
+```
+
+Change version accordingly.
+
+
+
 
 
 
