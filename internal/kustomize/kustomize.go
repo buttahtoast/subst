@@ -35,6 +35,10 @@ func NewKustomize(root string) (k *Kustomize, err error) {
 	if err != nil {
 		return nil, err
 	}
+	err = k.addPath(root)
+	if err != nil {
+		return nil, err
+	}
 
 	return k, nil
 }
