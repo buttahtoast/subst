@@ -1,6 +1,6 @@
 
 FROM bash:5
-ENV KUBECONFIG=/etc/kubernetes/kubeconfig
+ENV ARGOCD_EXEC_TIMEOUT=90s
 COPY subst /subst
 COPY argocd-cmp/cmp.yaml /home/argocd/cmp-server/config/plugin.yaml
 COPY argocd-cmp/entrypoint.sh /entrypoint.sh
