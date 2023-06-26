@@ -19,7 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - uses: docker/setup-buildx-action@4b4e9c3e2d4531116a6f8ba8e71fc6e2cb6e6c8c # v2
-      - uses: sigstore/cosign-installer@v3.0.3
+      - uses: sigstore/cosign-installer@v3.1.0
       - uses: anchore/sbom-action/download-syft@v0.14.2
       - name: ghcr-login
         if: startsWith(github.ref, 'refs/tags/v')
