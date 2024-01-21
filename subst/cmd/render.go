@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/buttahtoast/subst/internal/utils"
@@ -68,13 +69,13 @@ func render(cmd *cobra.Command, args []string) error {
 	}
 	m, err := subst.New(*configuration)
 	if err != nil {
-		logrus.Error(err)
 		return err
 	}
+
+	start := time.Now() // Start time measurement
 	if m != nil {
 		err = m.Build()
 		if err != nil {
-			logrus.Error(err)
 			return err
 		}
 		if m.Manifests != nil {
@@ -87,6 +88,8 @@ func render(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
+	elapsed := time.Since(start) // Calculate elapsed time
+	logrus.Debug("Execution time: %v", elapsed)
 
 	return nil
 }

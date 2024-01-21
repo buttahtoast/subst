@@ -5,59 +5,17 @@ repoServer:
   - emptyDir: {}
     name: subst-tmp
   - emptyDir: {}
-    name: subst-kubeconfig
-  initContainers:
-    - name: kubeconfig
-      image: docker.io/bash:latest
-      imagePullPolicy: Always
-      command:
-      - bash
-      - -c
-      - |
-          TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-          CA=$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt | base64 | tr -d \\n)
-
-          cat <<EOF > /tmp/plugin.conf
-          apiVersion: v1
-          clusters:
-          - cluster:
-              certificate-authority-data: ${CA}
-              server: https://kubernetes.default.svc
-            name: default-cluster
-          contexts:
-          - context:
-              cluster: default-cluster
-              namespace: default
-              user: default-auth
-            name: default-context
-          current-context: default-context
-          kind: Config
-          preferences: {}
-          users:
-          - name: default-auth
-            user:
-              token: ${TOKEN}
-          EOF
-      env:
-      securityContext:
-        runAsUser: 65534
-        runAsGroup: 65534
-        runAsNonRoot: true
-        privileged: false
-        allowPrivilegeEscalation: false
-        capabilities:
-          drop:
-            - ALL
-        seccompProfile:
-          type: RuntimeDefault
-        readOnlyRootFilesystem: true
-      volumeMounts:
-      - mountPath: /tmp/
-        name: subst-kubeconfig
+    name: env-tmp
+  - name: env-plugin
+    configMap:
+      name: dump-data
+      items:
+      - key: plugin.yaml
+        path: plugin.yaml
   extraContainers:
-  - name: cmp-subst
+  - name: cmp-env
     command: [/var/run/argocd/argocd-cmp-server]
-    image: {{ include "pkg.images.registry.convert" (dict "image" .image "ctx" $) }}
+    image: busybox
     imagePullPolicy: IfNotPresent
     securityContext: 
       runAsUser: 999
@@ -79,16 +37,35 @@ repoServer:
       # Custom Plugin mount  
       - mountPath: /home/argocd/cmp-server/config/plugin.yaml
         subPath: plugin.yaml
-        name: subst-plugin
+        name: env-plugin
       # Starting with v2.4, do NOT mount the same tmp volume as the repo-server container. The filesystem separation helps
       # mitigate path traversal attacks.
       - mountPath: /tmp
+        name: env-tmp
+  - name: cmp-subst
+    command: [/var/run/argocd/argocd-cmp-server] # Entrypoint should be Argo CD lightweight CMP server i.e. argocd-cmp-server
+    image: ghcr.io/buttahtoast/subst-cmp:local
+    imagePullPolicy: Never
+    securityContext: 
+      runAsUser: 999
+      runAsGroup: 999
+      runAsNonRoot: true
+      privileged: false
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      seccompProfile:
+        type: RuntimeDefault
+      readOnlyRootFilesystem: true
+    volumeMounts:
+      - mountPath: /var/run/argocd
+        name: var-files
+      - mountPath: /home/argocd/cmp-server/plugins
+        name: plugins
+      # Custom Plugin mount  
+      #- mountPath: /home/argocd/cmp-server/config/plugin.yaml
+      #  subPath: plugin.yaml
+      #  name: subst-plugin
+      - mountPath: /tmp
         name: subst-tmp
-      - mountPath: /etc/kubernetes/
-        name: subst-kubeconfig
-redis:
-  enabled: true
-  image:
-    repository: redis
-    tag: latest
-    pullPolicy: IfNotPresent

@@ -28,8 +28,6 @@ import (
 // version included in the FuncMap is a placeholder.
 func SprigFuncMap() template.FuncMap {
 	f := sprig.TxtFuncMap()
-	delete(f, "env")
-	delete(f, "expandenv")
 
 	// Add some extra functionality
 	extra := template.FuncMap{

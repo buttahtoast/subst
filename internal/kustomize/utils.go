@@ -4,57 +4,27 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
-	securejoin "github.com/cyphar/filepath-securejoin"
 	"sigs.k8s.io/kustomize/api/konfig"
 	"sigs.k8s.io/kustomize/api/types"
 )
 
 func convertPath(path string) string {
-	if path[len(path)-1:] != "/" {
-		path = fmt.Sprintf("%v/", path)
+	// Efficiently ensure path ends with a slash
+	if len(path) > 0 && path[len(path)-1] != filepath.Separator {
+		path += string(filepath.Separator)
 	}
 	return path
 }
 
-// securePaths returns the absolute and relative paths for the provided path,
-// guaranteed to be scoped inside the provided root.
-// When the given path is absolute, the root is stripped before secure joining
-// it on root.
-func securePaths(root, path string) (string, string, error) {
-	if filepath.IsAbs(path) {
-		path = stripRoot(root, path)
-	}
-	secureAbsPath, err := securejoin.SecureJoin(root, path)
-	if err != nil {
-		return "", "", err
-	}
-	return secureAbsPath, stripRoot(root, secureAbsPath), nil
-}
-
-func stripRoot(root, path string) string {
-	sepStr := string(filepath.Separator)
-	root, path = filepath.Clean(sepStr+root), filepath.Clean(sepStr+path)
-	switch {
-	case path == root:
-		path = sepStr
-	case root == sepStr:
-		// noop
-	case strings.HasPrefix(path, root+sepStr):
-		path = strings.TrimPrefix(path, root+sepStr)
-	}
-	return filepath.Clean(filepath.Join("."+sepStr, path))
-}
-
-// ReadKustomize reads a kustomization file from a path
 func kustomizeFile(path string) (types.Kustomization, error) {
 	kz := types.Kustomization{}
 	for _, kfilename := range konfig.RecognizedKustomizationFileNames() {
-		if _, err := os.Stat(path + kfilename); err == nil {
-			kzBytes, err := os.ReadFile(path + kfilename)
+		fullPath := filepath.Join(path, kfilename)
+		if _, err := os.Stat(fullPath); err == nil {
+			kzBytes, err := os.ReadFile(fullPath)
 			if err != nil {
-				println(err)
+				return kz, err
 			}
 			err = kz.Unmarshal(kzBytes)
 

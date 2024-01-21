@@ -7,12 +7,11 @@ import (
 	"regexp"
 	"text/template"
 
+	decrypt "github.com/buttahtoast/pkg/decryptors"
 	"github.com/buttahtoast/subst/internal/utils"
 	"github.com/buttahtoast/subst/internal/wrapper"
-	"github.com/buttahtoast/subst/pkg/decryptor"
 	"github.com/geofffranks/spruce"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 	"sigs.k8s.io/kustomize/api/resmap"
 )
 
@@ -27,7 +26,7 @@ var (
 type Substitutions struct {
 	Subst      map[interface{}]interface{} `yaml:"subst"`
 	Config     SubstitutionsConfig         `yaml:"config"`
-	decryptors []decryptor.Decryptor
+	decryptors []decrypt.Decryptor
 	funcmap    template.FuncMap
 	Resources  resmap.ResMap
 }
@@ -39,7 +38,7 @@ type SubstitutionsConfig struct {
 	FlattenLowerCase bool   `yaml:"lowercase"`
 }
 
-func NewSubstitutions(cfg SubstitutionsConfig, decrypts []decryptor.Decryptor, res resmap.ResMap) (s *Substitutions, err error) {
+func NewSubstitutions(cfg SubstitutionsConfig, decrypts []decrypt.Decryptor, res resmap.ResMap) (s *Substitutions, err error) {
 
 	if cfg.SubstKey == "" {
 		cfg.SubstKey = "subst"
@@ -77,14 +76,8 @@ func NewSubstitutions(cfg SubstitutionsConfig, decrypts []decryptor.Decryptor, r
 }
 
 // Get returns the Substitutions as map[interface{}]interface{}
-func (s *Substitutions) Get() (map[interface{}]interface{}, error) {
-	output := make(map[interface{}]interface{})
-	yml, err := yaml.Marshal(s.Subst)
-	if err != nil {
-		return nil, err
-	}
-	err = yaml.Unmarshal(yml, output)
-	return output, err
+func (s *Substitutions) Get() map[interface{}]interface{} {
+	return s.Subst
 }
 
 // ToMap returns the Substitutions as map[string]interface{}
@@ -100,7 +93,7 @@ func (s *Substitutions) Add(data map[interface{}]interface{}, optimistic bool) (
 		return fmt.Errorf("failed to build subtitutions: %s", err)
 	}
 
-	t, err := s.Get()
+	t := s.Get()
 	if err != nil {
 		return err
 	}
@@ -117,7 +110,7 @@ func (s *Substitutions) Add(data map[interface{}]interface{}, optimistic bool) (
 // Merge merges the Substitutions with the given data
 func (s *Substitutions) Eval(data map[interface{}]interface{}, substs map[interface{}]interface{}, optimistic bool) (eval map[interface{}]interface{}, err error) {
 	if substs == nil {
-		substs, err = s.Get()
+		substs = s.Get()
 		if err != nil {
 			return nil, err
 		}
@@ -148,10 +141,10 @@ func (s *Substitutions) Eval(data map[interface{}]interface{}, substs map[interf
 	return eval, nil
 }
 
-func (s *Substitutions) Walk(path string, f fs.FileInfo) (err error) {
+func (s *Substitutions) Walk(path string, f fs.FileInfo) error {
 
 	if f.IsDir() {
-		return filepath.SkipDir
+		return nil
 	}
 	full := filepath.Join(path, f.Name())
 
@@ -163,27 +156,36 @@ func (s *Substitutions) Walk(path string, f fs.FileInfo) (err error) {
 			return err
 		}
 
-		c, err = file.SPRUCE()
-		if err != nil {
-			err := file.Template(s.funcmap, s.Subst)
-			if err != nil {
-				return fmt.Errorf("failed to template %s: %s", full, err)
-			}
-			c, err = file.SPRUCE()
-			if err != nil {
-				return fmt.Errorf("failed to parse %s: %s", full, err)
-			}
-		}
-
 		// Read encrypted file
 		for _, d := range s.decryptors {
-			if d.IsEncrypted(file.Byte()) {
+			isEncrypted, err := d.IsEncrypted(file.Byte())
+			if err != nil {
+				// Handle the error, e.g., log it and continue to the next decryptor
+				logrus.Errorf("Error checking encryption for %s: %s", full, err)
+				continue
+			}
+			if isEncrypted {
 				logrus.Debugf("decrypted: %s", full)
-				c, err = d.Read(file.Byte())
+				file.Byte()
+				dm, err := d.Decrypt(file.Byte())
 				if err != nil {
 					return fmt.Errorf("failed to decrypt %s: %s", full, err)
 				}
-				continue
+				c = utils.ToInterface(dm)
+				break
+			}
+		}
+
+		c, err = file.SPRUCE()
+		if err != nil {
+			// If SPRUCE fails, apply templating and then reattempt SPRUCE
+			if tmplErr := file.Template(s.funcmap, s.Subst); tmplErr != nil {
+				return fmt.Errorf("failed to template %s: %s", full, tmplErr)
+			}
+
+			c, err = file.SPRUCE() // Reattempt SPRUCE after templating
+			if err != nil {
+				return fmt.Errorf("failed to parse %s: %s", full, err)
 			}
 		}
 
@@ -200,6 +202,8 @@ func (s *Substitutions) Walk(path string, f fs.FileInfo) (err error) {
 				return fmt.Errorf("failed to merge %s: %s", full, err)
 			}
 		}
+
+		logrus.Debug("final: ", full, "")
 	}
-	return err
+	return nil
 }

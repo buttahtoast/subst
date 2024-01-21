@@ -29,12 +29,6 @@ type Configuration struct {
 	Output          string        `mapstructure:"output"`
 }
 
-var (
-	configLocations = []string{
-		".",
-	}
-)
-
 func LoadConfiguration(cfgFile string, cmd *cobra.Command, directory string) (*Configuration, error) {
 	v := viper.New()
 

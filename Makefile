@@ -84,6 +84,11 @@ kind-up:
 	@echo "Building kubernetes $${KIND_K8S_VERSION:-v1.25.0}..."
 	@kind create cluster --name $(K3S_NAME) --image kindest/node:$${KIND_K8S_VERSION:-v1.25.0} --wait=120s 
 
+kind-load-image: PLUGIN_IMG = ghcr.io/buttahtoast/subst-cmp:local
+kind-load-image: docker-build-cmp
+	@echo "Loading image into cluster..."
+	@kind load docker-image ${PLUGIN_IMG} --name $(K3S_NAME)
+
 .PHONY: kind-down
 kind-down:
 	@echo "Deleting cluser..."
@@ -91,17 +96,16 @@ kind-down:
 
 # Local ArgoCD Development environment
 .PHONY: argocd-dev
-argocd-dev: kind-up argocd-install load-cmp
+argocd-dev: kind-up kind-load-image argocd-install
 	@echo "ArgoCD is available at http://localhost:8080"
+	make argocd-admin
 
 .PHONY: argocd-install
 argocd-install:
 	@helm repo add argo https://argoproj.github.io/argo-helm
 	@helm repo update
-	@helm upgrade --install argo/argocd --namespace argocd --create-namespace --name argocd --values argocd-values.yaml
+	@helm upgrade --install argocd argo/argo-cd --namespace argocd --create-namespace --values hack/argocd-values.yaml
+	@kubectl kustomize hack/ | kubectl apply -f -
 
-# Loads local cmp build of subst into kind cluster and restarts argocd components
-.PHONY: load-cmp
-load-cmp:
-	@make docker-build-cmp
-	@kind load docker-image ${PLUGIN_IMG} --name $(K3S_NAME)
+argocd-admin:
+	@kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
