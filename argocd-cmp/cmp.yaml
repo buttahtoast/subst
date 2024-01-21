@@ -15,8 +15,10 @@ spec:
     args:
     - render
     - "."
+    - --secret-name
+    - "${ARGOCD_APP_NAME}"
     - --secret-namespace
-    - "argocd"
+    - "${ARGOCD_APP_NAMESPACE}"
     - --env-regex
     - "^ARGOCD_ENV_.*$"
     - --must-decrypt
