@@ -14,10 +14,8 @@ builds:
       - CGO_ENABLED=0
     goarch:
       - amd64
-      - arm64
     goos:
       - linux
-      - darwin
     flags:
       - -trimpath
     mod_timestamp: '{{ .CommitTimestamp }}'
@@ -167,17 +165,20 @@ changelog:
 sboms:
   - artifacts: archive
 signs:
-  - cmd: cosign
-    stdin: '{{ .Env.COSIGN_PWD }}'
-    args: ["sign-blob", "--key=cosign.key", "--output=${signature}", "${artifact}"]
-    artifacts: checksum
+- cmd: cosign
+  args:
+  - "sign-blob"
+  - "--output-signature=${signature}"
+  - "${artifact}"
+  - "--yes"
+  artifacts: all
 docker_signs:
 - cmd: cosign
   artifacts: manifests
   output: true
-  stdin: '{{ .Env.COSIGN_PWD }}'
   args:
   - 'sign'
+  - "--output-signature=${signature}"
   - '${artifact}@${digest}'
   - --yes
 #brews:
