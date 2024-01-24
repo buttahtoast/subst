@@ -1,10 +1,9 @@
 package utils
 
 import (
-	"bytes"
 	"encoding/json"
-	"io/ioutil"
-	"text/template"
+	"io"
+	"os"
 
 	"gopkg.in/yaml.v2"
 )
@@ -15,40 +14,22 @@ type File struct {
 }
 
 func NewFile(path string) (*File, error) {
-	result := &File{
-		Path: path,
-	}
-	data, err := result.load()
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	result.data = data
-	return result, err
-}
+	defer file.Close()
 
-func (f *File) Template(funcmap template.FuncMap, values map[interface{}]interface{}) (err error) {
-	tmpl, err := template.New("fileTemplate").Funcs(funcmap).Parse(string(f.Byte()))
-	if err != nil {
-		return err
-	}
-
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, ToMap(values))
-	if err != nil {
-		return err
-	}
-
-	f.data = buf.Bytes()
-	return nil
-}
-
-func (f *File) load() ([]byte, error) {
-	var data []byte
-	data, err := ioutil.ReadFile(f.Path)
+	data, err := io.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}
-	return data, nil
+
+	return &File{data: data, Path: path}, nil
+}
+
+func (f *File) OverwriteDataByte(data []byte) {
+	f.data = data
 }
 
 func (f *File) Byte() []byte {
@@ -57,19 +38,14 @@ func (f *File) Byte() []byte {
 
 func (f *File) Map() (map[interface{}]interface{}, error) {
 	data := make(map[interface{}]interface{})
-	err := yaml.Unmarshal(f.data, &data)
-	if err != nil {
+	if err := yaml.Unmarshal(f.data, &data); err != nil {
 		return nil, err
 	}
 	return data, nil
 }
 
 func (f *File) YAML() ([]byte, error) {
-	d, err := f.Map()
-	if err != nil {
-		return nil, err
-	}
-	return yaml.Marshal(d)
+	return yaml.Marshal(f.data)
 }
 
 func (f *File) JSON() ([]byte, error) {
@@ -81,9 +57,5 @@ func (f *File) JSON() ([]byte, error) {
 }
 
 func (f *File) SPRUCE() (map[interface{}]interface{}, error) {
-	data, err := f.YAML()
-	if err != nil {
-		return nil, err
-	}
-	return ParseYAML(data)
+	return ParseYAML(f.Byte())
 }

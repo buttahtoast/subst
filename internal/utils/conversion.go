@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/geofffranks/simpleyaml"
 	"github.com/starkandwayne/goutils/ansi"
@@ -75,8 +77,18 @@ func PrintYAML(data map[interface{}]interface{}) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("---\n%s", string(y))
-	return err
+
+	writer := bufio.NewWriter(os.Stdout)
+	defer writer.Flush()
+
+	if _, err := writer.WriteString("---\n"); err != nil {
+		return err
+	}
+	if _, err := writer.Write(y); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // create a golang function which prints map[interface{}]interface{}
@@ -87,4 +99,16 @@ func PrintJSON(data map[interface{}]interface{}) error {
 	}
 	fmt.Println(string(j))
 	return err
+}
+
+func UnmarshalJSONorYAML(data []byte) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := json.Unmarshal(data, &result)
+	if err != nil {
+		err = yaml.Unmarshal(data, &result)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return result, nil
 }

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/buttahtoast/subst/internal/utils"
@@ -49,8 +50,6 @@ func addRenderFlags(flags *flag.FlagSet) {
 			May be specified multiple times or separate values with commas`))
 	flags.Bool("must-decrypt", false, heredoc.Doc(`
 			Fail if not all ejson files can be decrypted`))
-	flags.Bool("skip-decrypt", false, heredoc.Doc(`
-			Disable decryption of EJSON files`))
 	flags.String("env-regex", "^ARGOCD_ENV_.*$", heredoc.Doc(`
 	        Only expose environment variables that match the given regex`))
 	flags.String("output", "yaml", heredoc.Doc(`
@@ -70,13 +69,13 @@ func render(cmd *cobra.Command, args []string) error {
 	}
 	m, err := subst.New(*configuration)
 	if err != nil {
-		logrus.Error(err)
 		return err
 	}
+
+	start := time.Now() // Start time measurement
 	if m != nil {
 		err = m.Build()
 		if err != nil {
-			logrus.Error(err)
 			return err
 		}
 		if m.Manifests != nil {
@@ -89,6 +88,8 @@ func render(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
+	elapsed := time.Since(start) // Calculate elapsed time
+	logrus.Debug("Build time: ", elapsed)
 
 	return nil
 }

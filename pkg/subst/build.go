@@ -1,12 +1,15 @@
 package subst
 
 import (
+	"context"
 	"fmt"
 
+	decrypt "github.com/buttahtoast/pkg/decryptors"
+	ejson "github.com/buttahtoast/pkg/decryptors/ejson"
+	sops "github.com/buttahtoast/pkg/decryptors/sops"
 	"github.com/buttahtoast/subst/internal/kustomize"
 	"github.com/buttahtoast/subst/internal/utils"
 	"github.com/buttahtoast/subst/pkg/config"
-	"github.com/buttahtoast/subst/pkg/decryptor"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -17,7 +20,7 @@ type Build struct {
 	Kustomization *kustomize.Kustomize
 	Substitutions *Substitutions
 	cfg           config.Configuration
-	decryptors    []decryptor.Decryptor
+	decryptors    []decrypt.Decryptor
 	kubeClient    *kubernetes.Clientset
 }
 
@@ -64,12 +67,18 @@ func (b *Build) Build() (err error) {
 
 		mBytes, _ := manifest.MarshalJSON()
 		for _, d := range b.decryptors {
-			if d.IsEncrypted(mBytes) {
-				c, err = d.Read(mBytes)
-				if err != nil {
-					return fmt.Errorf("failed to decrypt")
-				}
+			isEncrypted, err := d.IsEncrypted(mBytes)
+			if err != nil {
+				logrus.Errorf("Error checking encryption for %s: %s", mBytes, err)
 				continue
+			}
+			if isEncrypted {
+				dm, err := d.Decrypt(mBytes)
+				if err != nil {
+					return fmt.Errorf("failed to decrypt %s: %s", mBytes, err)
+				}
+				c = utils.ToInterface(dm)
+				break
 			}
 		}
 
@@ -88,8 +97,6 @@ func (b *Build) Build() (err error) {
 		}
 		b.Manifests = append(b.Manifests, f)
 	}
-	logrus.Infof("build finished")
-
 	return nil
 }
 
@@ -103,10 +110,12 @@ func (b *Build) loadSubstitutions() (err error) {
 	}
 	logrus.Debug("subtitution files loaded")
 
+	logrus.Debug("loaded substitutions: ", b.Substitutions.Subst)
+
 	// Final attempt to evaluate
 	eval, err := b.Substitutions.Eval(b.Substitutions.Subst, nil, false)
 	if err != nil {
-		return err
+		return fmt.Errorf("spruce evaluation failed")
 	}
 	b.Substitutions.Subst = eval
 
@@ -122,18 +131,20 @@ func (b *Build) loadSubstitutions() (err error) {
 // initialize decryption
 func (b *Build) initialize() (err error) {
 
-	c := decryptor.DecryptorConfig{
+	c := decrypt.DecryptorConfig{
 		SkipDecrypt: b.cfg.SkipDecrypt,
-		MustDecrypt: b.cfg.MustDecrypt,
 	}
 
-	ed := decryptor.NewEJSONDecryptor(c, b.cfg.EjsonKey...)
+	ed, err := ejson.NewEJSONDecryptor(c, "", b.cfg.EjsonKey...)
 	if err != nil {
 		return err
 	}
 	b.decryptors = append(b.decryptors, ed)
-
-	// SOPS
+	sd := sops.NewSOPSDecryptor(c, "")
+	if err != nil {
+		return err
+	}
+	b.decryptors = append(b.decryptors, sd)
 
 	if !b.cfg.SkipDecrypt && (b.cfg.SecretName != "" && b.cfg.SecretNamespace != "") {
 
@@ -147,8 +158,9 @@ func (b *Build) initialize() (err error) {
 			if err != nil {
 				logrus.Warnf("could not load kubernetes client: %s", err)
 			} else {
+				ctx := context.Background()
 				for _, decr := range b.decryptors {
-					err = decr.FromSecret(b.cfg.SecretName, b.cfg.SecretNamespace, b.kubeClient)
+					err = decr.KeysFromSecret(b.cfg.SecretName, b.cfg.SecretNamespace, b.kubeClient, ctx)
 					if err != nil {
 						logrus.Warnf("failed to load secrets from Kubernetes: %s", err)
 					}

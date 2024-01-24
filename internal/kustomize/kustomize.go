@@ -3,7 +3,6 @@ package kustomize
 import (
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -15,105 +14,85 @@ import (
 )
 
 type Kustomize struct {
-	// Root Directory
-	Root string
-	// Paths resolved from kustomization files
+	Root  string
 	Paths []string
-	// Kustomization outputs
 	Build resmap.ResMap
 }
 
-func NewKustomize(root string) (k *Kustomize, err error) {
-	k = &Kustomize{
-		Root: root,
-	}
-	err = k.build()
-	if err != nil {
+func NewKustomize(root string) (*Kustomize, error) {
+	k := &Kustomize{Root: root}
+	if err := k.build(); err != nil {
 		return nil, err
 	}
-	err = k.paths(root)
-	if err != nil {
+	if err := k.paths(root); err != nil {
 		return nil, err
 	}
-	err = k.addPath(root)
-	if err != nil {
+	if err := k.addPath(root); err != nil {
 		return nil, err
 	}
-
 	return k, nil
 }
 
-// buildMutex protects against kustomize concurrent map read/write panic
 var kustomizeBuildMutex sync.Mutex
 
-// Add a new path (must be below kustomize root)
 func (k *Kustomize) addPath(path string) error {
 	p, err := filepath.Abs(path)
 	if err != nil {
 		return err
 	}
-
-	//p, _, err := securePaths(k.Root, path)
-	//if err != nil {
-	//	logrus.Error(err)
-	//} else {
-	//	logrus.Debug("adding path: ", path)
-	//	k.Paths = append(k.Paths, path)
-	//}
-
-	// if path is not already in the list, add it
 	for _, v := range k.Paths {
 		if v == p {
 			return nil
 		}
 	}
-
 	k.Paths = append(k.Paths, p)
 	return nil
 }
 
-// Resolve all paths from the kustomization file
-func (k *Kustomize) paths(path string) (err error) {
+func (k *Kustomize) paths(path string) error {
 	path = convertPath(path)
 	kz, err := kustomizeFile(path)
 	if err != nil {
 		return err
 	}
 
-	// Add Patch Locations to paths
 	for _, patch := range kz.Patches {
-		k.addPath(fmt.Sprintf("%v%v", path, filepath.Dir(patch.Path)))
+		if err := k.addPath(filepath.Join(path, filepath.Dir(patch.Path))); err != nil {
+			return err
+		}
 	}
 
 	for _, resource := range kz.Resources {
-		p := fmt.Sprintf("%v%v", path, resource)
-		file, _ := os.Stat(p)
+		p := filepath.Join(path, resource)
+		file, err := os.Stat(p)
+		if err != nil {
+			return err
+		}
 		if file.IsDir() {
 			p = convertPath(p)
-			err := k.paths(p)
+			if err := k.paths(p); err != nil {
+				return err
+			}
+			if err := k.addPath(p); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (k *Kustomize) Walk(fn func(path string, f fs.FileInfo) error) error {
+	for _, path := range k.Paths {
+		files, err := os.ReadDir(path)
+		if err != nil {
+			return err
+		}
+		for _, entry := range files {
+			file, err := entry.Info()
 			if err != nil {
 				return err
 			}
-
-			// Add Parent path after recursion (Has higher priority)
-			k.addPath(p)
-		}
-	}
-	return nil
-}
-
-// Generic funtion to walk all paths and run a function on each file
-func (k *Kustomize) Walk(fn func(path string, f fs.FileInfo) error) error {
-	for path := range k.Paths {
-		buildDir, err := ioutil.ReadDir(k.Paths[path])
-
-		if err != nil && err != fs.SkipDir {
-			return err
-		}
-
-		for _, file := range buildDir {
-			err = fn(k.Paths[path], file)
-			if err != nil && err != fs.SkipDir {
+			if err := fn(path, file); err != nil {
 				return err
 			}
 		}
@@ -121,16 +100,12 @@ func (k *Kustomize) Walk(fn func(path string, f fs.FileInfo) error) error {
 	return nil
 }
 
-// Build the kustomization
 func (k *Kustomize) build() (err error) {
 	fs := filesys.MakeFsOnDisk()
 
 	kustomizeBuildMutex.Lock()
 	defer kustomizeBuildMutex.Unlock()
 
-	// Kustomize tends to panic in unpredicted ways due to (accidental)
-	// invalid object data; recover when this happens to ensure continuity of
-	// operations
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("recovered from kustomize build panic: %v", r)

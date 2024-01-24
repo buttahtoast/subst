@@ -30,12 +30,6 @@ type Configuration struct {
 	ConvertSecretname bool          `mapstructure:"convert-secret-name"`
 }
 
-var (
-	configLocations = []string{
-		".",
-	}
-)
-
 func LoadConfiguration(cfgFile string, cmd *cobra.Command, directory string) (*Configuration, error) {
 	v := viper.New()
 
@@ -47,28 +41,6 @@ func LoadConfiguration(cfgFile string, cmd *cobra.Command, directory string) (*C
 			}
 		}
 	})
-
-	if cfgFile != "" {
-		v.SetConfigFile(cfgFile)
-	}
-
-	//else {
-	//	v.AddConfigPath(directory)
-	//	v.SetConfigFile(".subst.yaml")
-	//}
-
-	if v.ConfigFileUsed() != "" {
-		logrus.Debugf("Using configuration file: %s", v.ConfigFileUsed())
-	}
-
-	if err := v.ReadInConfig(); err != nil {
-		switch err.(type) {
-		case viper.ConfigFileNotFoundError:
-			logrus.Debugf("No Config file found, loaded config from Environment")
-		default:
-			logrus.Fatalf("Error when Fetching Configuration - %s", err)
-		}
-	}
 
 	cfg := &Configuration{}
 	if err := v.Unmarshal(cfg); err != nil {
