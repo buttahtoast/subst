@@ -15,18 +15,19 @@ import (
 )
 
 type Configuration struct {
-	EnvRegex        string        `mapstructure:"env-regex"`
-	RootDirectory   string        `mapstructure:"root-dir"`
-	FileRegex       string        `mapstructure:"file-regex"`
-	SecretName      string        `mapstructure:"secret-name"`
-	SecretNamespace string        `mapstructure:"secret-namespace"`
-	EjsonKey        []string      `mapstructure:"ejson-key"`
-	SkipDecrypt     bool          `mapstructure:"skip-decrypt"`
-	MustDecrypt     bool          `mapstructure:"must-decrypt"`
-	KubectlTimeout  time.Duration `mapstructure:"kubectl-timeout"`
-	Kubeconfig      string        `mapstructure:"kubeconfig"`
-	KubeAPI         string        `mapstructure:"kube-api"`
-	Output          string        `mapstructure:"output"`
+	EnvRegex          string        `mapstructure:"env-regex"`
+	RootDirectory     string        `mapstructure:"root-dir"`
+	FileRegex         string        `mapstructure:"file-regex"`
+	SecretName        string        `mapstructure:"secret-name"`
+	SecretNamespace   string        `mapstructure:"secret-namespace"`
+	EjsonKey          []string      `mapstructure:"ejson-key"`
+	SkipDecrypt       bool          `mapstructure:"skip-decrypt"`
+	MustDecrypt       bool          `mapstructure:"must-decrypt"`
+	KubectlTimeout    time.Duration `mapstructure:"kubectl-timeout"`
+	Kubeconfig        string        `mapstructure:"kubeconfig"`
+	KubeAPI           string        `mapstructure:"kube-api"`
+	Output            string        `mapstructure:"output"`
+	ConvertSecretname bool          `mapstructure:"convert-secret-name"`
 }
 
 func LoadConfiguration(cfgFile string, cmd *cobra.Command, directory string) (*Configuration, error) {
@@ -41,28 +42,6 @@ func LoadConfiguration(cfgFile string, cmd *cobra.Command, directory string) (*C
 		}
 	})
 
-	if cfgFile != "" {
-		v.SetConfigFile(cfgFile)
-	}
-
-	//else {
-	//	v.AddConfigPath(directory)
-	//	v.SetConfigFile(".subst.yaml")
-	//}
-
-	if v.ConfigFileUsed() != "" {
-		logrus.Debugf("Using configuration file: %s", v.ConfigFileUsed())
-	}
-
-	if err := v.ReadInConfig(); err != nil {
-		switch err.(type) {
-		case viper.ConfigFileNotFoundError:
-			logrus.Debugf("No Config file found, loaded config from Environment")
-		default:
-			logrus.Fatalf("Error when Fetching Configuration - %s", err)
-		}
-	}
-
 	cfg := &Configuration{}
 	if err := v.Unmarshal(cfg); err != nil {
 		return nil, fmt.Errorf("failed unmarshaling configuration: %w", err)
@@ -76,8 +55,17 @@ func LoadConfiguration(cfgFile string, cmd *cobra.Command, directory string) (*C
 	}
 
 	if cfg.SecretName != "" {
-		regex := regexp.MustCompile(`[^a-zA-Z0-9]+`)
-		cfg.SecretName = regex.ReplaceAllString(cfg.SecretName, "-")
+		if cfg.ConvertSecretname {
+			cfg.SecretName = getValueAfterUnderscore(cfg.SecretName)
+
+		} else {
+			regex := regexp.MustCompile(`[^a-zA-Z0-9]+`)
+			cfg.SecretName = regex.ReplaceAllString(cfg.SecretName, "-")
+		}
+	}
+
+	if cfg.SecretNamespace == "" {
+		cfg.SecretNamespace = os.Getenv("ARGOCD_APP_NAMESPACE")
 	}
 
 	if cfg.SecretName != "" && cfg.SecretNamespace == "" {

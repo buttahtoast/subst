@@ -39,6 +39,8 @@ func addRenderFlags(flags *flag.FlagSet) {
 	if flags.Lookup("kube-api") == nil {
 		flags.String("kube-api", "", "Kubernetes API Url")
 	}
+	flags.Bool("convert-secret-name", true, heredoc.Doc(`
+			Assuming the secret name is derived from ARGOCD_APP_NAME, this option will only use the application name (without project-name_)`))
 	flags.String("secret-name", "", heredoc.Doc(`
 	        Specify Secret name (each key within the secret will be used as a decryption key)`))
 	flags.String("secret-namespace", "", heredoc.Doc(`
@@ -48,8 +50,6 @@ func addRenderFlags(flags *flag.FlagSet) {
 			May be specified multiple times or separate values with commas`))
 	flags.Bool("must-decrypt", false, heredoc.Doc(`
 			Fail if not all ejson files can be decrypted`))
-	flags.Bool("skip-decrypt", false, heredoc.Doc(`
-			Disable decryption of EJSON files`))
 	flags.String("env-regex", "^ARGOCD_ENV_.*$", heredoc.Doc(`
 	        Only expose environment variables that match the given regex`))
 	flags.String("output", "yaml", heredoc.Doc(`

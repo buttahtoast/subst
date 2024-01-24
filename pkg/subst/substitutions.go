@@ -182,6 +182,9 @@ func (s *Substitutions) Walk(path string, f fs.FileInfo) error {
 		if err != nil {
 			return fmt.Errorf("failed to merge %s: %s", full, err)
 		}
+		if full == "/Users/pariah/Projects/Bedag/inventory/apps/overlays/stages/base/subst.yaml" {
+			utils.PrintYAML(s.Subst)
+		}
 
 		logrus.Debug("loaded: ", full, "")
 	}
