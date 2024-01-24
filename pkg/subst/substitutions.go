@@ -1,6 +1,7 @@
 package subst
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"path/filepath"
@@ -164,7 +165,14 @@ func (s *Substitutions) Walk(path string, f fs.FileInfo) error {
 				if err != nil {
 					return fmt.Errorf("failed to decrypt %s: %s", full, err)
 				}
-				c = utils.ToInterface(dm)
+				t, err := json.Marshal(dm)
+				if err != nil {
+					return fmt.Errorf("failed to marshal %s: %s", full, err)
+				}
+				c, err = utils.ParseYAML(t)
+				if err != nil {
+					return fmt.Errorf("failed to parse %s: %s", full, err)
+				}
 				break
 			}
 		}
@@ -181,9 +189,6 @@ func (s *Substitutions) Walk(path string, f fs.FileInfo) error {
 		err = s.Add(c, true)
 		if err != nil {
 			return fmt.Errorf("failed to merge %s: %s", full, err)
-		}
-		if full == "/Users/pariah/Projects/Bedag/inventory/apps/overlays/stages/base/subst.yaml" {
-			utils.PrintYAML(s.Subst)
 		}
 
 		logrus.Debug("loaded: ", full, "")
