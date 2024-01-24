@@ -13,6 +13,20 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+func Template(data []byte, values map[interface{}]interface{}) (map[interface{}]interface{}, error) {
+	tmpl, err := template.New("f").Funcs(SprigFuncMap()).Parse(string(data))
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, ToMap(values)); err != nil {
+		return nil, err
+	}
+
+	return ParseYAML(buf.Bytes())
+}
+
 // funcMap returns a mapping of all of the functions that Engine has.
 //
 // Because some functions are late-bound (e.g. contain context-sensitive

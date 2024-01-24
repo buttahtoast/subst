@@ -112,9 +112,12 @@ func (b *Build) loadSubstitutions() (err error) {
 	}
 	logrus.Debug("subtitution files loaded")
 
+	logrus.Debug("loaded substitutions: ", b.Substitutions.Subst)
+
 	// Final attempt to evaluate
 	eval, err := b.Substitutions.Eval(b.Substitutions.Subst, nil, false)
 	if err != nil {
+		//utils.PrintYAML(b.Substitutions.Subst)
 		return err
 	}
 	b.Substitutions.Subst = eval

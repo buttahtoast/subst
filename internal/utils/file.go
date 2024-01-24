@@ -1,11 +1,9 @@
 package utils
 
 import (
-	"bytes"
 	"encoding/json"
 	"io"
 	"os"
-	"text/template"
 
 	"gopkg.in/yaml.v2"
 )
@@ -30,19 +28,8 @@ func NewFile(path string) (*File, error) {
 	return &File{data: data, Path: path}, nil
 }
 
-func (f *File) Template(funcmap template.FuncMap, values map[interface{}]interface{}) error {
-	tmpl, err := template.New("fileTemplate").Funcs(funcmap).Parse(string(f.data))
-	if err != nil {
-		return err
-	}
-
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, ToMap(values)); err != nil {
-		return err
-	}
-
-	f.data = buf.Bytes()
-	return nil
+func (f *File) OverwriteDataByte(data []byte) {
+	f.data = data
 }
 
 func (f *File) Byte() []byte {

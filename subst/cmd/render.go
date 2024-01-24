@@ -89,7 +89,7 @@ func render(cmd *cobra.Command, args []string) error {
 		}
 	}
 	elapsed := time.Since(start) // Calculate elapsed time
-	logrus.Debug("Execution time: %v", elapsed)
+	logrus.Debug("Build time: ", elapsed)
 
 	return nil
 }
