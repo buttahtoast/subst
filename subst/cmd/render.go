@@ -38,6 +38,8 @@ func addRenderFlags(flags *flag.FlagSet) {
 	if flags.Lookup("kube-api") == nil {
 		flags.String("kube-api", "", "Kubernetes API Url")
 	}
+	flags.Bool("convert-secret-name", true, heredoc.Doc(`
+			Assuming the secret name is derived from ARGOCD_APP_NAME, this option will only use the application name (without project-name_)`))
 	flags.String("secret-name", "", heredoc.Doc(`
 	        Specify Secret name (each key within the secret will be used as a decryption key)`))
 	flags.String("secret-namespace", "", heredoc.Doc(`
