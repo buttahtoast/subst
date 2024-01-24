@@ -15,18 +15,19 @@ import (
 )
 
 type Configuration struct {
-	EnvRegex        string        `mapstructure:"env-regex"`
-	RootDirectory   string        `mapstructure:"root-dir"`
-	FileRegex       string        `mapstructure:"file-regex"`
-	SecretName      string        `mapstructure:"secret-name"`
-	SecretNamespace string        `mapstructure:"secret-namespace"`
-	EjsonKey        []string      `mapstructure:"ejson-key"`
-	SkipDecrypt     bool          `mapstructure:"skip-decrypt"`
-	MustDecrypt     bool          `mapstructure:"must-decrypt"`
-	KubectlTimeout  time.Duration `mapstructure:"kubectl-timeout"`
-	Kubeconfig      string        `mapstructure:"kubeconfig"`
-	KubeAPI         string        `mapstructure:"kube-api"`
-	Output          string        `mapstructure:"output"`
+	EnvRegex          string        `mapstructure:"env-regex"`
+	RootDirectory     string        `mapstructure:"root-dir"`
+	FileRegex         string        `mapstructure:"file-regex"`
+	SecretName        string        `mapstructure:"secret-name"`
+	SecretNamespace   string        `mapstructure:"secret-namespace"`
+	EjsonKey          []string      `mapstructure:"ejson-key"`
+	SkipDecrypt       bool          `mapstructure:"skip-decrypt"`
+	MustDecrypt       bool          `mapstructure:"must-decrypt"`
+	KubectlTimeout    time.Duration `mapstructure:"kubectl-timeout"`
+	Kubeconfig        string        `mapstructure:"kubeconfig"`
+	KubeAPI           string        `mapstructure:"kube-api"`
+	Output            string        `mapstructure:"output"`
+	ConvertSecretname bool          `mapstructure:"convert-secret-name"`
 }
 
 var (
@@ -82,8 +83,17 @@ func LoadConfiguration(cfgFile string, cmd *cobra.Command, directory string) (*C
 	}
 
 	if cfg.SecretName != "" {
-		regex := regexp.MustCompile(`[^a-zA-Z0-9]+`)
-		cfg.SecretName = regex.ReplaceAllString(cfg.SecretName, "-")
+		if cfg.ConvertSecretname {
+			cfg.SecretName = getValueAfterUnderscore(cfg.SecretName)
+
+		} else {
+			regex := regexp.MustCompile(`[^a-zA-Z0-9]+`)
+			cfg.SecretName = regex.ReplaceAllString(cfg.SecretName, "-")
+		}
+	}
+
+	if cfg.SecretNamespace == "" {
+		cfg.SecretNamespace = os.Getenv("ARGOCD_APP_NAMESPACE")
 	}
 
 	if cfg.SecretName != "" && cfg.SecretNamespace == "" {
