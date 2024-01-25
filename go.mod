@@ -2,6 +2,8 @@ module github.com/buttahtoast/subst
 
 go 1.19
 
+replace github.com/buttahtoast/pkg/decryptors => /Users/pariah/Projects/pkg/decryptors
+
 require (
 	github.com/BurntSushi/toml v1.2.1
 	github.com/MakeNowJust/heredoc v1.0.0

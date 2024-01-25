@@ -53,7 +53,7 @@ Install it with the [ArgoCD community chart](https://github.com/argoproj/argo-he
       extraContainers:
       - name: cmp-subst
         args: [/var/run/argocd/argocd-cmp-server]
-        image: ghcr.io/buttahtoast/subst-cmp:v0.3.0-alpha1
+        image: ghcr.io/buttahtoast/subst-cmp:v0.3.0
         imagePullPolicy: Always
         securityContext:
           allowPrivilegeEscalation: false
@@ -85,16 +85,6 @@ Install it with the [ArgoCD community chart](https://github.com/argoproj/argo-he
 ```
 
 Change version accordingly.
-
-
-
-
-
-
-**Applications in Projects**
-
-If an application is in a project, the value of `$ARGOCD_APP_NAME` looks like this: `<project-name>_<application-name>`. For example, if the application `my-app` is in the project `my-project`, the value of `$ARGOCD_APP_NAME` is `my-project_my-app`. 
-All special characters within are converted to `-` (dash). For example, if the application `my-app` is in the project `my-project`, the value of `$ARGOCD_APP_NAME` is `my-project-my-app`. So the secret reference is then `my-project-my-app` in the secret namespace.
 
 ## Available Substitutions
 
@@ -145,17 +135,29 @@ Note that directories do not resolve by recursion (eg. `/test/build/` only colle
 
 for environment variables which come from an argo application (`^ARGOCD_ENV_`) we remove the `ARGOCD_ENV_` and they are then available in your substitutions without the `ARGOCD_ENV_` prefix. This way they have the same name you have given them on the application ([Read More](https://argo-cd.readthedocs.io/en/stable/operator-manual/config-management-plugins/#using-environment-variables-in-your-plugin)). All the substions are available as flat key, so where needed you can use environment substitution.
 
-### Substitution (Envsubst)
-
-Subst does not support Environment Substitution. However we have a transformator, which allows to perform environment substitutions (outside of the subst context). [Read More](https://github.com/buttahtoast/transformers/tree/main/transformers/substitution)
-
 ## Spruce
 
 [Spruce](https://github.com/geofffranks/spruce) is used to access the substition variables, it has more flexability than [envsubst](#environment-substitution). You can grab values from the available substitutions using [Spruce Operators](https://github.com/geofffranks/spruce/blob/main/doc/operators.md). Spurce is greate, because it's operators are valid YAML which allows to build the kustomize without any further hacking.
 
 ## Secrets
 
-You can both encrypt files which are part of the kustomize build or which are used for substitution. Currently for secret decryption we support both [ejson](https://github.com/Shopify/ejson) and [sops](https://github.com/mozilla/sops). You can use any combination of these decryption providers together. The principal for all decryption provider is, that they should load the private keys while a substiution build is made instead of having a permanent keystore. This allows for secret tenancy (eg. one secret per argo application). 
+You can both encrypt files which are part of the kustomize build or which are used for substitution. Currently for secret decryption we support both [ejson](https://github.com/Shopify/ejson) and [sops](https://github.com/mozilla/sops). You can use any combination of these decryption providers together. The principal for all decryption provider is, that they should load the private keys while a substiution build is made instead of having a permanent keystore. This allows for secret tenancy (eg. one secret per argo application). The private keys are loaded from kubernetes secrets, therefor the plugin also creates it's own kubeconfig. 
+
+The secrets are loaded based on the environment variables `$ARGOCD_APP_NAME` and `$ARGOCD_APP_NAMESPACE` are used. If an application is in a project, the value of `$ARGOCD_APP_NAME` looks like this: `<project-name>_<application-name>`. For example, if the application `my-app` is in the project `my-project`, the value of `$ARGOCD_APP_NAME` is `my-project_my-app`. All special characters within are converted to `-` (dash). For example, if the application `my-app` is in the project `my-project`, the value of `$ARGOCD_APP_NAME` is `my-project-my-app`. So the secret reference is then `my-project-my-app` in the secret namespace (Assuming `--convert-secret-name=false`). 
+
+By default the `--convert-secret-name` is enabled. This removes the project prefix from the secret. If you create an application `test` in the namespace `test-reserved` the plugin is looking for private keys in the  secret `test` in the namespace `test-reserved`. The is not considered in this approach which helps endusers to keep it simple.
+
+The values for the secret name and namespace can also be set constant, however this way you lose the multi-tenancy aspect of the secrets management:
+
+```
+subst render --secret-name static-name --secret-namespace static-namespace .
+```
+
+You can disable the lookup of the private keys in Kubernetes secrets. This is useful if you want to use the substition without access to the kubernetes clusters. The decryption providers allow to enter the private keys directly. This is useful for CI/CD pipelines or local testing (See decryption provider documentation).
+
+```
+subst render . --skip-secret-lookup
+```
 
 Decryption can be disabled, in that case the files are just loaded, without their encryption properties (might be useful if you dont have access to the private keys to decrypt the secrets):
 
@@ -163,11 +165,7 @@ Decryption can be disabled, in that case the files are just loaded, without thei
 subst render . --skip-decrypt
 ```
 
-Decryption can be enforced, if a secret can not be decrypted it's treated as an error (recommended):
-
-```
-subst render . --must-decrypt
-```
+See below how to work with the different decryption providers.
 
 ### EJSON
 
