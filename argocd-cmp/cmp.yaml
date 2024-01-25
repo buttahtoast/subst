@@ -17,6 +17,5 @@ spec:
     - "."
     - --env-regex
     - "^ARGOCD_ENV_.*$"
-    - --must-decrypt
     - --kubeconfig
     - "/etc/kubernetes/kubeconfig"

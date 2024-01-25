@@ -22,7 +22,6 @@ type Configuration struct {
 	SecretNamespace   string        `mapstructure:"secret-namespace"`
 	EjsonKey          []string      `mapstructure:"ejson-key"`
 	SkipDecrypt       bool          `mapstructure:"skip-decrypt"`
-	MustDecrypt       bool          `mapstructure:"must-decrypt"`
 	KubectlTimeout    time.Duration `mapstructure:"kubectl-timeout"`
 	Kubeconfig        string        `mapstructure:"kubeconfig"`
 	KubeAPI           string        `mapstructure:"kube-api"`

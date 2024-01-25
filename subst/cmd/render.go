@@ -48,8 +48,8 @@ func addRenderFlags(flags *flag.FlagSet) {
 	flags.StringSlice("ejson-key", []string{}, heredoc.Doc(`
 			Specify EJSON Private key used for decryption.
 			May be specified multiple times or separate values with commas`))
-	flags.Bool("must-decrypt", false, heredoc.Doc(`
-			Fail if not all ejson files can be decrypted`))
+	flags.Bool("skip-decrypt", false, heredoc.Doc(`
+			Skip decryption`))
 	flags.String("env-regex", "^ARGOCD_ENV_.*$", heredoc.Doc(`
 	        Only expose environment variables that match the given regex`))
 	flags.String("output", "yaml", heredoc.Doc(`
