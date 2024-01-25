@@ -20,7 +20,6 @@ type Build struct {
 	Kustomization *kustomize.Kustomize
 	Substitutions *Substitutions
 	cfg           config.Configuration
-	decryptors    []decrypt.Decryptor
 	kubeClient    *kubernetes.Clientset
 }
 
@@ -36,29 +35,56 @@ func New(config config.Configuration) (build *Build, err error) {
 		Kustomization: k,
 	}
 
-	err = init.initialize()
-	if err != nil {
-		return nil, err
-	}
-	SubstitutionsConfig := SubstitutionsConfig{
-		EnvironmentRegex: init.cfg.EnvRegex,
-		SubstFileRegex:   init.cfg.FileRegex,
-	}
-
-	s, err := NewSubstitutions(SubstitutionsConfig, init.decryptors, k.Build)
-	if err != nil {
-		return nil, err
-	}
-	init.Substitutions = s
-
-	err = init.loadSubstitutions()
-	if err != nil {
-		return nil, err
-	}
 	return init, err
 }
 
+func (b *Build) BuildSubstitutions() (err error) {
+	decryptors, cleanups, err := b.decryptors()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		for _, cleanup := range cleanups {
+			cleanup()
+		}
+	}()
+
+	SubstitutionsConfig := SubstitutionsConfig{
+		EnvironmentRegex: b.cfg.EnvRegex,
+		SubstFileRegex:   b.cfg.FileRegex,
+	}
+
+	b.Substitutions, err = NewSubstitutions(SubstitutionsConfig, decryptors, b.Kustomization.Build)
+	if err != nil {
+		return err
+	}
+
+	err = b.loadSubstitutions()
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
 func (b *Build) Build() (err error) {
+
+	if b.Substitutions == nil {
+		logrus.Debug("no resources to build")
+		return nil
+	}
+
+	decryptors, cleanups, err := b.decryptors()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		for _, cleanup := range cleanups {
+			cleanup()
+		}
+	}()
 
 	// Run Build
 	logrus.Debug("substitute manifests")
@@ -66,7 +92,7 @@ func (b *Build) Build() (err error) {
 		var c map[interface{}]interface{}
 
 		mBytes, _ := manifest.MarshalJSON()
-		for _, d := range b.decryptors {
+		for _, d := range decryptors {
 			isEncrypted, err := d.IsEncrypted(mBytes)
 			if err != nil {
 				logrus.Errorf("Error checking encryption for %s: %s", mBytes, err)
@@ -97,6 +123,7 @@ func (b *Build) Build() (err error) {
 		}
 		b.Manifests = append(b.Manifests, f)
 	}
+
 	return nil
 }
 
@@ -108,9 +135,6 @@ func (b *Build) loadSubstitutions() (err error) {
 	if err != nil {
 		return err
 	}
-	logrus.Debug("subtitution files loaded")
-
-	logrus.Debug("loaded substitutions: ", b.Substitutions.Subst)
 
 	// Final attempt to evaluate
 	eval, err := b.Substitutions.Eval(b.Substitutions.Subst, nil, false)
@@ -129,7 +153,7 @@ func (b *Build) loadSubstitutions() (err error) {
 }
 
 // initialize decryption
-func (b *Build) initialize() (err error) {
+func (b *Build) decryptors() (decryptors []decrypt.Decryptor, cleanups []func(), err error) {
 
 	c := decrypt.DecryptorConfig{
 		SkipDecrypt: b.cfg.SkipDecrypt,
@@ -137,14 +161,24 @@ func (b *Build) initialize() (err error) {
 
 	ed, err := ejson.NewEJSONDecryptor(c, "", b.cfg.EjsonKey...)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
-	b.decryptors = append(b.decryptors, ed)
-	sd := sops.NewSOPSDecryptor(c, "")
-	if err != nil {
-		return err
+	decryptors = append(decryptors, ed)
+
+	if b.cfg.SopsTempKeyring {
+		sd, sopsCleanup, err := sops.NewSOPSTempDecryptor(c)
+		if err != nil {
+			return nil, nil, err
+		}
+		cleanups = append(cleanups, sopsCleanup)
+		decryptors = append(decryptors, sd)
+	} else {
+		decryptors = append(decryptors, sops.NewSOPSDecryptor(c, b.cfg.SopSKeyring))
 	}
-	b.decryptors = append(b.decryptors, sd)
+
+	if b.cfg.SecretSkip {
+		return
+	}
 
 	if !b.cfg.SkipDecrypt && (b.cfg.SecretName != "" && b.cfg.SecretNamespace != "") {
 
@@ -159,7 +193,7 @@ func (b *Build) initialize() (err error) {
 				logrus.Warnf("could not load kubernetes client: %s", err)
 			} else {
 				ctx := context.Background()
-				for _, decr := range b.decryptors {
+				for _, decr := range decryptors {
 					err = decr.KeysFromSecret(b.cfg.SecretName, b.cfg.SecretNamespace, b.kubeClient, ctx)
 					if err != nil {
 						logrus.Warnf("failed to load secrets from Kubernetes: %s", err)
@@ -170,5 +204,5 @@ func (b *Build) initialize() (err error) {
 		}
 	}
 
-	return nil
+	return
 }

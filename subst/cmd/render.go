@@ -41,6 +41,8 @@ func addRenderFlags(flags *flag.FlagSet) {
 	}
 	flags.Bool("convert-secret-name", true, heredoc.Doc(`
 			Assuming the secret name is derived from ARGOCD_APP_NAME, this option will only use the application name (without project-name_)`))
+	flags.Bool("skip-secret-lookup", false, heredoc.Doc(`
+		Skip reading from decryption keys from Secret`))
 	flags.String("secret-name", "", heredoc.Doc(`
 	        Specify Secret name (each key within the secret will be used as a decryption key)`))
 	flags.String("secret-namespace", "", heredoc.Doc(`
@@ -48,6 +50,10 @@ func addRenderFlags(flags *flag.FlagSet) {
 	flags.StringSlice("ejson-key", []string{}, heredoc.Doc(`
 			Specify EJSON Private key used for decryption.
 			May be specified multiple times or separate values with commas`))
+	flags.String("sops-keyring", "", heredoc.Doc(`
+	        Path to local GPG keyring`))
+	flags.Bool("sops-temp-keyring", true, heredoc.Doc(`
+			Creates for each execution a dedicated keyring which is automatically deleted after execution. If false, uses the default keyring`))
 	flags.Bool("skip-decrypt", false, heredoc.Doc(`
 			Skip decryption`))
 	flags.String("env-regex", "^ARGOCD_ENV_.*$", heredoc.Doc(`
@@ -68,6 +74,11 @@ func render(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed loading configuration: %w", err)
 	}
 	m, err := subst.New(*configuration)
+	if err != nil {
+		return err
+	}
+
+	err = m.BuildSubstitutions()
 	if err != nil {
 		return err
 	}
