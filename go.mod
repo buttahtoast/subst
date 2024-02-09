@@ -3,7 +3,7 @@ module github.com/buttahtoast/subst
 go 1.19
 
 require (
-	github.com/BurntSushi/toml v1.2.1
+	github.com/BurntSushi/toml v1.3.2
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/buttahtoast/pkg/decryptors v0.0.0-20240118231345-2f3b4888024a
