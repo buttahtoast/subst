@@ -190,13 +190,13 @@ func (b *Build) decryptors() (decryptors []decrypt.Decryptor, cleanups []func(),
 		if err == nil {
 			b.kubeClient, err = kubernetes.NewForConfig(cfg)
 			if err != nil {
-				logrus.Warnf("could not load kubernetes client: %s", err)
+				logrus.Debug("could not load kubernetes client: %s", err)
 			} else {
 				ctx := context.Background()
 				for _, decr := range decryptors {
 					err = decr.KeysFromSecret(b.cfg.SecretName, b.cfg.SecretNamespace, b.kubeClient, ctx)
 					if err != nil {
-						logrus.Warnf("failed to load secrets from Kubernetes: %s", err)
+						logrus.Debug("failed to load secrets from Kubernetes: %s", err)
 					}
 				}
 

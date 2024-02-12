@@ -43,7 +43,7 @@ dockers:
   - image_templates: 
       - "ghcr.io/buttahtoast/{{ .ProjectName }}:{{ .Tag }}"
       - "ghcr.io/buttahtoast/{{ .ProjectName }}:latest"
-    dockerfile: Dockerfile
+    dockerfile: Dockerfile.goreleaser
     goos: linux
     goarch: amd64
     use: buildx
@@ -87,7 +87,7 @@ dockers:
   - image_templates: 
     - "ghcr.io/buttahtoast/{{ .ProjectName }}-cmp:{{ .Tag }}"
     - "ghcr.io/buttahtoast/{{ .ProjectName }}-cmp:latest"
-    dockerfile: argocd-cmp/Dockerfile
+    dockerfile: argocd-cmp/Dockerfile.goreleaser
     goos: linux
     goarch: amd64
     use: buildx

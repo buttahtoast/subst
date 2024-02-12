@@ -1,4 +1,3 @@
-
 FROM bash:5
 ENV ARGOCD_EXEC_TIMEOUT=90s
 COPY subst /subst
