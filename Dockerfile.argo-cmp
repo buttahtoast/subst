@@ -1,7 +1,21 @@
-FROM bash:5
-COPY subst /subst
-COPY argocd-cmp/cmp.yaml /home/argocd/cmp-server/config/plugin.yaml
-RUN adduser -H -D -s /bin/bash -G nobody -u 999 argocd
-USER argocd:nobody
-#ENTRYPOINT ["/usr/local/bin/subst"]
+FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.19 as builder
 
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+
+WORKDIR /app/
+ADD . .
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-w -s -X github.com/buttahtoast/subst/subst/cmd.Version={{ .Tag }} -X github.com/buttahtoast/subst/subst/cmd.GitCommit={{ .Commit }} -X github.com/buttahtoast/subst/subst/cmd.BuildDate={{ .Date }}" -o subst ./subst/main.go
+
+
+FROM --platform=${TARGETPLATFORM:-linux/amd64} scratch
+ENV ARGOCD_EXEC_TIMEOUT=90s
+COPY --from=builder /app/subst /subst
+COPY cmp.yaml /home/argocd/cmp-server/config/plugin.yaml
+COPY entrypoint.sh /entrypoint.sh
+RUN adduser -H -D -s /bin/bash -G nobody -u 999 argocd && \
+    chmod +x /entrypoint.sh
+USER argocd:nobody
+ENTRYPOINT ["/entrypoint.sh"]

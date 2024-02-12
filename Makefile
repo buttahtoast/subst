@@ -1,18 +1,26 @@
 projectname?=subst
 K3S_NAME ?= subst-cmp
 
-VERSION ?= $$(git describe --abbrev=0 --tags --match "v*")
-IMG ?= ghcr.io/buttahtoast/subst:$(VERSION)
-PLUGIN_IMG ?= ghcr.io/buttahtoast/subst-cmp:$(VERSION)
-
 # Get information about git current status
+GOOS            ?= $(shell go env GOOS)
+GOARCH          ?= $(shell go env GOARCH)
 GIT_HEAD_COMMIT ?= $$(git rev-parse --short HEAD)
 GIT_TAG_COMMIT  ?= $$(git rev-parse --short $(VERSION))
 GIT_MODIFIED_1  ?= $$(git diff $(GIT_HEAD_COMMIT) $(GIT_TAG_COMMIT) --quiet && echo "" || echo ".dev")
 GIT_MODIFIED_2  ?= $$(git diff --quiet && echo "" || echo ".dirty")
 GIT_MODIFIED    ?= $$(echo "$(GIT_MODIFIED_1)$(GIT_MODIFIED_2)")
 GIT_REPO        ?= $$(git config --get remote.origin.url)
-BUILD_DATE      ?= $$(git log -1 --format="%at" | xargs -I{} date -d @{} +%Y-%m-%dT%H:%M:%S)
+BUILD_DATE      ?= $(shell git log -1 --format="%at" | xargs -I{} sh -c 'if [ "$(shell uname)" = "Darwin" ]; then date -r {} +%Y-%m-%dT%H:%M:%S; else date -d @{} +%Y-%m-%dT%H:%M:%S; fi')
+
+# Docker Build
+DOCKER_CLI_EXPERIMENTAL ?= enabled
+LOCAL_PLATFORM := linux/$(GOARCH)
+# Define platforms in cli if multiple needed linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64,linux/ppc64le,linux/s390x 
+TARGET_PLATFORMS ?= $(LOCAL_PLATFORM)
+
+VERSION ?= $$(git describe --abbrev=0 --tags --match "v*")
+IMG ?= ghcr.io/buttahtoast/subst:$(VERSION)
+PLUGIN_IMG ?= ghcr.io/buttahtoast/subst-cmp:$(VERSION)
 
 default: help
 
@@ -58,14 +66,24 @@ PHONY: lint
 lint: ## lint go files
 	golangci-lint run -c .golang-ci.yml
 
+
 .PHONY: docker-build
-docker-build: ## dockerize golang application
-	docker build . -f Dockerfile -t ${IMG} --build-arg GIT_HEAD_COMMIT=$(GIT_HEAD_COMMIT) \
+docker-build:
+	@docker buildx create --use --name=cross --node=cross && \
+	docker buildx build \
+        --build-arg GIT_HEAD_COMMIT=$(GIT_HEAD_COMMIT) \
  		--build-arg GIT_TAG_COMMIT=$(GIT_TAG_COMMIT) \
  		--build-arg GIT_MODIFIED=$(GIT_MODIFIED) \
  		--build-arg GIT_REPO=$(GIT_REPO) \
  		--build-arg GIT_LAST_TAG=$(VERSION) \
- 		--build-arg BUILD_DATE=$(BUILD_DATE)
+ 		--build-arg BUILD_DATE=$(BUILD_DATE) \
+		--platform $(TARGET_PLATFORMS) \
+		--output "type=docker,push=false" \
+		--tag $(IMG) \
+		-f Dockerfile.argo-cmp \ 
+		./
+
+
 
 .PHONY: docker-build-cmp
 docker-build-cmp: ## build argocd plugin
