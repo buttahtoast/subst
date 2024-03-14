@@ -1,10 +1,15 @@
+FROM alpine as helm
+WORKDIR /app
+ADD https://get.helm.sh/helm-v3.13.2-linux-amd64.tar.gz helm-v3.13.2-linux-amd64.tar.gz
+RUN tar -zxvf helm-v3.13.2-linux-amd64.tar.gz
+
 FROM bash:5
 ENV ARGOCD_EXEC_TIMEOUT=90s
 COPY subst /subst
 COPY argocd-cmp/cmp.yaml /home/argocd/cmp-server/config/plugin.yaml
 COPY argocd-cmp/entrypoint.sh /entrypoint.sh
+COPY --from=helm /app/linux-amd64/helm /helm
 RUN adduser -H -D -s /bin/bash -G nobody -u 999 argocd && \
     chmod +x /entrypoint.sh
 USER argocd:nobody
 ENTRYPOINT ["/entrypoint.sh"]
-
